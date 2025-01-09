@@ -1,0 +1,23 @@
+### Footprint positions - created on Wed Sep 11 18:53:39 2024 ###
+### Printed by KiCad version 7.0.5
+## Unit = mm, Angle = deg.
+## Side : top
+# Ref     Val                    Package                                     PosX       PosY       Rot  Side
+C1        10u_35V                CP_Radial_D6.3mm_P2.50mm                139.9540   -65.0240  -90.0000  top
+C2        10u_15V                CP_Radial_D5.0mm_P2.50mm                142.7480   -99.0600   90.0000  top
+C3        22p                    C_0805_2012Metric                       130.0480  -116.3320  180.0000  top
+C4        22p                    C_0805_2012Metric                       130.0480  -114.0460  180.0000  top
+C5        100n                   C_0805_2012Metric                       132.8420  -106.6800  -90.0000  top
+C6        100n                   C_0805_2012Metric                       118.4300  -107.1880    0.0000  top
+F1        Polyfuse_10ma/20mA     C_Disc_D7.5mm_W2.5mm_P5.00mm            143.5100   -91.8680   90.0000  top
+J1        JST05_StepperMotor     JST_XH_B5B-XH-A_1x05_P2.50mm_Vertical   140.2080   -48.7680  -90.0000  top
+J6        Conn_02x08_Top_Bottom  Card_Edge_16_power                      150.1750  -119.3800   90.0000  top
+R1        10k                    R_0805_2012Metric                       132.4845  -121.6660  180.0000  top
+R2        10k                    R_0805_2012Metric                       139.5495   -88.7440    0.0000  top
+R3        4k7                    R_0805_2012Metric                       139.5495   -91.6940    0.0000  top
+U1        ULN2003                SOIC-16W_5.3x10.2mm_P1.27mm             130.0480   -61.2140   90.0000  top
+U2        A1101ELHL              SOT-23W                                  95.0000   -71.8100    0.0000  top
+U3        SN75176AP              DIP-8_W7.62mm                           135.6460  -116.5960    0.0000  top
+U4        ATmega8A-A             TQFP-32_7x7mm_P0.8mm                    125.8380  -105.9860    0.0000  top
+Y1        16MHz                  Crystal_HC49-U_Vertical                 119.7240  -114.3000    0.0000  top
+## End
