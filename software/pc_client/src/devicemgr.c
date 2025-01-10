@@ -1,4 +1,6 @@
 #include "devicemgr.h"
+#include <json-c/json_object.h>
+#include <string.h>
 
 /*
  * This file provides an abstraction layer to access many devices
@@ -8,26 +10,38 @@ enum SFDEVICE_STATE { NEW, OFFLINE, ONLINE, FAILED };
 enum SFDEVICE_POWER { DISABLED, ENABLED, UNKNOWN };
 
 struct SFDEVICE {
-  u_int16_t address;
-  int rs485_descriptor;
-  double reg_voltage;
-  u_int32_t reg_counter;
-  u_int8_t reg_status;
-  u_int8_t current_flap;
-  enum SFDEVICE_STATE deviceState;
-  enum SFDEVICE_POWER powerState;
+    int pos_x;
+    int pos_y;
+    u_int16_t address;
+    int rs485_descriptor;
+    double reg_voltage;
+    u_int32_t reg_counter;
+    u_int8_t reg_status;
+    u_int8_t current_flap;
+    enum SFDEVICE_STATE deviceState;
+    enum SFDEVICE_POWER powerState;
 };
 
 #define SFDEVICE_MAXDEV 128
 
+#define SFDEVICE_MAX_X 20
+#define SFDEVICE_MAX_Y 4
+
 // next free slot to register device
 int nextFreeSlot = -1;
+int deviceMap[SFDEVICE_MAX_X][SFDEVICE_MAX_Y];
+
 struct SFDEVICE devices[SFDEVICE_MAXDEV];
 
-
+const char* symbols[] = {" ", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "Ä", "Ö", "Ü", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ":", ".", "-", "?", "!"};
 
 void devicemgr_init() {
   // reserve memory buffer
+    for (int y = 0; y<SFDEVICE_MAX_Y; y++){
+        for (int x = 0; x<SFDEVICE_MAX_X; x++){
+            deviceMap[x][y] = -1;   //all empty slots are -1
+        }
+    }
 }
 
 int devicemgr_readStatus(int device_id) {
@@ -53,11 +67,30 @@ int devicemgr_readStatus(int device_id) {
   }
 }
 
+json_object * devicemgr_printMap(){
+    json_object *rows_array = json_object_new_array();
+    for (int y = 0; y<SFDEVICE_MAX_Y; y++){
+        json_object *columns_array = json_object_new_array();
+        for (int x = 0; x<SFDEVICE_MAX_X; x++){
+            json_object_array_add(columns_array, json_object_new_int(deviceMap[x][y]));
+        }
+        json_object_array_add(rows_array,columns_array);
+    }
+    return rows_array;
+}
+
 json_object * devicemgr_printDetails(int device_id){
     // generate json object with status
     json_object *root = json_object_new_object();
     json_object_object_add(root, "id", json_object_new_int(device_id));
     json_object_object_add(root, "address", json_object_new_int(devices[device_id].address));
+    json_object_object_add(root, "flapID", json_object_new_int(devices[device_id].current_flap));
+    json_object_object_add(root, "flapChar", json_object_new_string(symbols[devices[device_id].current_flap]));
+    json_object *position = json_object_new_object();
+    json_object_object_add(position, "x", json_object_new_int(devices[device_id].pos_x));
+    json_object_object_add(position, "y", json_object_new_int(devices[device_id].pos_y));
+    json_object_object_add(root, "position", position);
+
     json_object *status = json_object_new_object();
     json_object_object_add(status, "voltage", json_object_new_double(devices[device_id].reg_voltage));
     json_object_object_add(status, "rotations", json_object_new_int(devices[device_id].reg_counter));
@@ -101,6 +134,7 @@ json_object * devicemgr_printDetailsAll(){
         if ( devices[i].deviceState == ONLINE ){devices_online++;}
         json_object_array_add(devices_arr, devicemgr_printDetails(i));
     }
+    json_object_object_add(root, "map", devicemgr_printMap());
     json_object_object_add(root, "devices", devices_arr);
     json_object_object_add(root, "devices_online", json_object_new_int(devices_online));
     
@@ -108,9 +142,24 @@ json_object * devicemgr_printDetailsAll(){
     return root;
 }
 
+void setSingle(int id, u_int8_t flap){
+    sfbus_display_full(devices[id].rs485_descriptor , devices[id].address,flap);
+    devices[nextFreeSlot].current_flap = flap;
+}
 
-int devicemgr_register(int rs485_descriptor, u_int16_t address) {
+void printText(char* text,int x,int y){
+    for (int i = 0; i<strlen(text);i++){
+        int this_id = deviceMap[x+i][y];
+        if (this_id >= 0){
+            setSingle(devices[this_id].address,*(text+i));
+        }
+    }
+}
+
+int devicemgr_register(int rs485_descriptor, u_int16_t address, int x,int y) {
   nextFreeSlot++;
+  devices[nextFreeSlot].pos_x = x;
+  devices[nextFreeSlot].pos_y = y;
   devices[nextFreeSlot].address = address;
   devices[nextFreeSlot].rs485_descriptor = rs485_descriptor;
   devices[nextFreeSlot].reg_voltage = 0;
@@ -121,6 +170,12 @@ int devicemgr_register(int rs485_descriptor, u_int16_t address) {
   devices[nextFreeSlot].powerState = DISABLED;
   // try to reach device
   devicemgr_readStatus(nextFreeSlot);
+  if (deviceMap[x][y] >= 0){    // rest old ones
+    int old_id = deviceMap[x][y];
+    devices[old_id].pos_x = -1;
+    devices[old_id].pos_y = -1;
+  }
+  deviceMap[x][y] = nextFreeSlot;
   return nextFreeSlot;
 }
 

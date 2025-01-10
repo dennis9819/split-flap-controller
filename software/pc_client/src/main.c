@@ -67,10 +67,11 @@ int main(int argc, char *argv[]) {
   int fd = rs485_init(port, B19200); // setup rs485
 
   // test
-  devicemgr_register(fd,0);
-  devicemgr_register(fd,1);
+  devicemgr_init();
+  devicemgr_register(fd,0,0,0);
+  devicemgr_register(fd,1,1,0);
   devicemgr_printDetailsAll();
-  exit(1);
+  //exit(1);
 
   if (strcmp(command, "ping") == 0) {
     sfbus_ping(fd, addr_int);

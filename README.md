@@ -6,7 +6,7 @@ Notable changes:
 * Hot-swappable modules
 * New Backplane
 * New PCB, using mostly smd components and an atmega8 mcu.
-* RS-485 bus
+* RS-485 at 19200-Baud, Half-Duplex
 * Custom leightweight protocol
 * Controller, running an WebSockets-Server.
 * Homing-Failure and overcurrent detection
