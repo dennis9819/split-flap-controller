@@ -1,3 +1,12 @@
+/* Copyright (C) 2025 Dennis Gunia - All Rights Reserved
+ * You may use, distribute and modify this code under the
+ * terms of the  AGPL-3.0 license.
+ *
+ * https://www.dennisgunia.de
+ * https://github.com/dennis9819/splitflap_v1
+ */
+
+
 #include "mctrl.h"
 
 // Motor driver steps definition. Reverse for direction change.
@@ -97,7 +106,7 @@ ISR(TIMER1_COMPA_vect) {
     return;
   } // if sts_flag_pwrdwn, STOP!
   if (steps_since_home >
-      STEPS_PRE_REV * 1.5) { // check if home is missing for too long
+      STEPS_PER_REV * 1.5) { // check if home is missing for too long
     // home missing error. Wheel probably stuck or power fail
     sts_flag_noHome = 1;
     failSafe();
@@ -124,24 +133,24 @@ ISR(TIMER1_COMPA_vect) {
     absolute_pos--;
   } else { // when no failsafe is triggered and homing is done
     // calculate target position
-    uint16_t target_pos = (target_flap * STEPS_PRE_FLAP) + rel_offset;
-    if (target_pos >= STEPS_PRE_REV) {
-      target_pos -= STEPS_PRE_REV;
+    uint16_t target_pos = (target_flap * STEPS_PER_FLAP) + rel_offset;
+    if (target_pos >= STEPS_PER_REV) {
+      target_pos -= STEPS_PER_REV;
     }
     if (absolute_pos != target_pos) {
       // if target position is not reached, move motor
       ticksSinceMove = 0;
       mctrl_step();
       absolute_pos++;
-      if (absolute_pos >= STEPS_PRE_REV) {
-        absolute_pos -= STEPS_PRE_REV;
+      if (absolute_pos >= STEPS_PER_REV) {
+        absolute_pos -= STEPS_PER_REV;
       }
       // detect home position
       if ((PIND & (1 << PD3)) == 0) {
         if (lastSens == 0) {
           // new home transition
           int16_t errorDelta =
-              (absolute_pos > (STEPS_PRE_REV / 2) ? absolute_pos - STEPS_PRE_REV
+              (absolute_pos > (STEPS_PER_REV / 2) ? absolute_pos - STEPS_PER_REV
                                                   : absolute_pos);
           sts_flag_errorTooBig =
               (errorDelta > 30) || (errorDelta < -30) ? 1 : 0;
@@ -208,11 +217,11 @@ void mctrl_set(uint8_t flap, uint8_t fullRotation) {
   if (fullRotation == 0) {
     target_flap = flap;
     // if (absolute_pos < STEPS_ADJ) {
-    //   absolute_pos += STEPS_PRE_REV;
+    //   absolute_pos += STEPS_PER_REV;
     // }
     // absolute_pos -= STEPS_ADJ;
   } else {
-    target_flap = (target_flap + (STEPS_PRE_FLAP - 1)) % STEPS_PRE_FLAP;
+    target_flap = (target_flap + (STEPS_PER_FLAP - 1)) % STEPS_PER_FLAP;
     afterRotation = flap;
   }
 }

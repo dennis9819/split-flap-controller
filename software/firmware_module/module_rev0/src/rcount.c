@@ -1,3 +1,12 @@
+/* Copyright (C) 2025 Dennis Gunia - All Rights Reserved
+ * You may use, distribute and modify this code under the
+ * terms of the  AGPL-3.0 license.
+ *
+ * https://www.dennisgunia.de
+ * https://github.com/dennis9819/splitflap_v1
+ */
+
+
 #include "rcount.h"
 
 uint8_t rc_eeprom_write_c(uint16_t address, uint8_t data) {

@@ -1,23 +1,24 @@
+/* Copyright (C) 2025 Dennis Gunia - All Rights Reserved
+ * You may use, distribute and modify this code under the
+ * terms of the  AGPL-3.0 license.
+ *
+ * https://www.dennisgunia.de
+ * https://github.com/dennis9819/splitflap_v1
+ */
+
+
+#include "global.h"
+#include "rcount.h"
+
 #pragma once
 
-#define MP_A PC0
-#define MP_B PC1
-#define MP_C PC2
-#define MP_D PC3
 
-#define STEPS_PRE_REV 2025
-#define STEPS_PRE_FLAP 45
+#define STEPS_PER_REV 2025
+#define STEPS_PER_FLAP 45
 #define STEPS_ADJ 0       // added per flap to compensate for motor power down
 #define AMOUNTFLAPS 45
 
 #define ERROR_DATASETS 8
-
-#include <stdlib.h>
-#include <string.h>
-#include <avr/io.h>
-#include <avr/interrupt.h>
-#include <util/delay.h>
-#include "rcount.h"
 
 #ifdef __cplusplus
 extern "C" {

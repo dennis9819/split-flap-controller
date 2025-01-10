@@ -1,3 +1,11 @@
+/* Copyright (C) 2025 Dennis Gunia - All Rights Reserved
+ * You may use, distribute and modify this code under the
+ * terms of the  AGPL-3.0 license.
+ *
+ * https://www.dennisgunia.de
+ * https://github.com/dennis9819/splitflap_v1
+ */
+
 #include "rs485.h"
 
 void rs485_init() {

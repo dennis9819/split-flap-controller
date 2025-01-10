@@ -1,20 +1,15 @@
+/* Copyright (C) 2025 Dennis Gunia - All Rights Reserved
+ * You may use, distribute and modify this code under the
+ * terms of the  AGPL-3.0 license.
+ *
+ * https://www.dennisgunia.de
+ * https://github.com/dennis9819/splitflap_v1
+ */
+
+#include "global.h"
 #include "mctrl.h"
 #include "rcount.h"
 #include "rs485.h"
-#include <avr/io.h>
-#include <avr/wdt.h>
-#include <stdlib.h>
-#include <util/delay.h>
-/*
- * PD0 -> BUS_RX
- * PD1 -> BUS_TX
- * PD2 -> BUS_DIR (0=RECV/1=SEND)
- *
- * PD3 -> SENSOR_IN
- *
- * PC0-3 -> MOTOR CTRL
- */
-
 uint16_t address = 0x0000;
 int16_t calib_offset = 0x0000;
 
@@ -37,11 +32,6 @@ uint8_t eeprom_read_c(uint16_t address) {
   EECR |= (1 << EERE); // read one
   return EEDR;
 }
-
-#define CONF_CONST_OKAY (uint8_t)0xAA
-#define CONF_ADDR_OKAY 0x0004
-#define CONF_ADDR_ADDR 0x0000
-#define CONF_ADDR_OFFSET 0x0002
 
 void initialSetup() {
   wdt_disable();

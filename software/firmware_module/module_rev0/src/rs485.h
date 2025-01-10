@@ -1,3 +1,12 @@
+/* Copyright (C) 2025 Dennis Gunia - All Rights Reserved
+ * You may use, distribute and modify this code under the
+ * terms of the  AGPL-3.0 license.
+ *
+ * https://www.dennisgunia.de
+ * https://github.com/dennis9819/splitflap_v1
+ */
+#include "global.h"
+
 #pragma once
 //#define F_CPU 16000000UL
 #define UART_BAUD 19200
@@ -6,8 +15,7 @@
 #define SFBUS_SOF_BYTE '+'
 #define SFBUS_EOF_BYTE '$'
 
-#include <avr/io.h>
-#include <avr/interrupt.h>
+
 
 #ifdef __cplusplus
 extern "C" {

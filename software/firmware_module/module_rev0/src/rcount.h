@@ -1,5 +1,12 @@
-#include <avr/io.h>
-#include <avr/interrupt.h>
+/* Copyright (C) 2025 Dennis Gunia - All Rights Reserved
+ * You may use, distribute and modify this code under the
+ * terms of the  AGPL-3.0 license.
+ *
+ * https://www.dennisgunia.de
+ * https://github.com/dennis9819/splitflap_v1
+ */
+
+#include "global.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -10,4 +17,3 @@ void rc_tick();
 #ifdef __cplusplus
 }
 #endif // __cplusplus
-
