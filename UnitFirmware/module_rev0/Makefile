@@ -39,6 +39,9 @@ build/%.o: %.c
 release: OPT_FLAGS=-O2 -DNDEBUG
 release: $(PROJ_BLD).elf
 
+fuse:
+	avrdude -c $(PROG_STR) -p $(MCU) -U lfuse:w:0xDF:m  -U hfuse:w:0xCA:m -B 125kHz
+
 flash:
 	avrdude -c $(PROG_STR) -p $(MCU) -U flash:w:$(PROJ_BLD).hex:i
 
