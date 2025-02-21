@@ -8,6 +8,8 @@
 
 #include "global.h"
 
+#define RC_BASEADDR 0x100
+
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
