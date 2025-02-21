@@ -20,7 +20,6 @@ uint8_t motor_steps[4] = {
 uint8_t step_index = 0;             // cuurent index in motor_steps
 uint8_t target_flap = 0;            // target flap
 uint16_t absolute_pos = 0;          // absolute position in steps
-uint16_t rel_offset = STEPS_OFFSET; // offset of '0' flap relative to home
 uint16_t steps_since_home = 0;      // steps since last home signal
 
 // homing util variables
@@ -31,7 +30,7 @@ uint8_t lastSens = 0; // home sonsor signal from last tick
 uint8_t ticksSinceMove = 0;
 
 // value to goto after the current target_flap is reached. 255 = NONE.
-uint8_t afterRotation = 255;
+uint8_t afterRotation = STEPS_AFTERROT;
 
 int16_t *delta_err;
 
@@ -133,16 +132,16 @@ ISR(TIMER1_COMPA_vect)
         {
             homing = 3;
             steps_since_home = 0;
-            absolute_pos = rel_offset;
+            absolute_pos = STEPS_OFFSET;
             incrementCounter();
         }
     }
     else if (homing == 3)
-    { // Homing procedure 3. step: find magnet
+    { // Homing procedure 3. step: apply offset
         if (absolute_pos <= 0)
         {
             homing = 0;
-            absolute_pos = rel_offset;
+            absolute_pos = STEPS_OFFSET;    // set correct position again
         }
         mctrl_step();
         absolute_pos--;
@@ -150,7 +149,7 @@ ISR(TIMER1_COMPA_vect)
     else
     { // when no failsafe is triggered and homing is done
         // calculate target position
-        uint16_t target_pos = (target_flap * STEPS_PER_FLAP) + rel_offset;
+        uint16_t target_pos = (target_flap * STEPS_PER_FLAP) + STEPS_OFFSET;
         if (target_pos >= STEPS_PER_REV)
         {
             target_pos -= STEPS_PER_REV;
@@ -192,7 +191,7 @@ ISR(TIMER1_COMPA_vect)
             if (afterRotation < (STEPS_PER_FLAP + 5))
             { // if after rotation is set, apply it as new target
                 target_flap = afterRotation;
-                afterRotation = 255;
+                afterRotation = STEPS_AFTERROT;
             }
             else if (ticksSinceMove < 2)
             { // if motor has not been moved
@@ -255,10 +254,6 @@ void mctrl_set(uint8_t flap, uint8_t fullRotation)
     if (fullRotation == 0)
     {
         target_flap = flap;
-        // if (absolute_pos < STEPS_ADJ) {
-        //   absolute_pos += STEPS_PER_REV;
-        // }
-        // absolute_pos -= STEPS_ADJ;
     }
     else
     {
@@ -273,7 +268,7 @@ void mctrl_home()
     homing = 1;
 }
 
-// trigger home procedure
+// change motor power state
 void mctrl_power(uint8_t state)
 {
     if (state == 0)

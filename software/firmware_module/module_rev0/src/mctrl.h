@@ -17,7 +17,7 @@
 #define STEPS_ADJ 0         // added per flap to compensate for motor power down
 #define STEPS_OFFSET 1400   // ansolute offset between home and first flap
 #define AMOUNTFLAPS 45      // amount of flaps installed in system
-
+#define STEPS_AFTERROT 255  // value to goto after current target flap is reached
 #define ERROR_DATASETS 8    // length of error array
 
 #define MDELAY_STARTUP 1000 // delay to wait after motor startup

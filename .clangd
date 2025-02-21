@@ -2,4 +2,4 @@
 CompileFlags:
   Add:
     - "-I/home/dennisgunia/.arduino15/packages/arduino/tools/avr-gcc/7.3.0-atmel3.6.1-arduino7/avr/include/"
-    - "-I"
+    - "-I/home/dennisgunia/.config/VSCodium/User/globalStorage/llvm-vs-code-extensions.vscode-clangd/install/19.1.2/clangd_19.1.2/lib/clang/19/include/stddef.h"

@@ -6,12 +6,12 @@
  * https://github.com/dennis9819/splitflap_v1
  */
 
+#include <stdlib.h>
+#include <string.h>
 #include <avr/io.h>
 #include <avr/wdt.h>
 #include <avr/interrupt.h>
 #include <util/delay.h>
-#include <stdlib.h>
-#include <string.h>
 #include <avr/iom8.h>
 
 
