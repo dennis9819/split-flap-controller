@@ -11,7 +11,6 @@
 
 #include "rs485.h"
 #include "sfbus.h"
-#include <unistd.h>
 #include "devicemgr.h"
 
 void printUsage(char *argv[]) {
@@ -20,7 +19,7 @@ void printUsage(char *argv[]) {
 }
 
 int main(int argc, char *argv[]) {
-  int opt;
+  int opt = ' ';
   u_int16_t addr_int = 0;
   char *port = malloc(256);
   char *command = malloc(16);

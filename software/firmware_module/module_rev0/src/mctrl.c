@@ -17,7 +17,7 @@ uint8_t motor_steps[4] = {
     0b00001000,
 };
 
-uint8_t step_index = 0;             // cuurent index in motor_steps
+uint8_t step_index = 0;             // current index in motor_steps
 uint8_t target_flap = 0;            // target flap
 uint16_t absolute_pos = 0;          // absolute position in steps
 uint16_t steps_since_home = 0;      // steps since last home signal
@@ -29,7 +29,7 @@ uint8_t lastSens = 0; // home sonsor signal from last tick
 // counter for auto powersaving
 uint8_t ticksSinceMove = 0;
 
-// value to goto after the current target_flap is reached. 255 = NONE.
+// value to goto after the current is reached. 255 = NONE.
 uint8_t afterRotation = STEPS_AFTERROT;
 
 int16_t *delta_err;
@@ -58,7 +58,7 @@ void mctrl_init()
     // setup adc
     ADMUX = 0x07;                                      // Aref, ADC7
     ADCSRA = (1 << ADEN) | (1 << ADSC) | (1 << ADPS1); // Enable ADC, Start first
-                                                       // reading No frerunning, 8MHz
+                                                       // reading No freerunning, 8MHz
     while ((ADCSRA & (1 << ADSC)) > 0)
     {
     };
@@ -188,7 +188,7 @@ ISR(TIMER1_COMPA_vect)
         }
         else
         { // if target position is reached
-            if (afterRotation < (STEPS_PER_FLAP + 5))
+            if (afterRotation < (AMOUNTFLAPS + 5))
             { // if after rotation is set, apply it as new target
                 target_flap = afterRotation;
                 afterRotation = STEPS_AFTERROT;

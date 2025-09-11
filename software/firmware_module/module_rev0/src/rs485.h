@@ -9,13 +9,11 @@
 
 #pragma once
 //#define F_CPU 16000000UL
-#define UART_BAUD 19200
+#define UART_BAUD 19200     // RS485 baud rate
 #define BAUDRATE ((F_CPU) / (UART_BAUD * 16UL) - 1)  // set baud rate value for UBRR
 
-#define SFBUS_SOF_BYTE '+'
-#define SFBUS_EOF_BYTE '$'
-
-
+#define SFBUS_SOF_BYTE '+'  // Byte marks start of frame
+#define SFBUS_EOF_BYTE '$'  // Byte marks end of frame
 
 #ifdef __cplusplus
 extern "C" {
