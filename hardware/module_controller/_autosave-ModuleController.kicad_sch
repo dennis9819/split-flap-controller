@@ -3915,6 +3915,16 @@
 	)
 	(wire
 		(pts
+			(xy 115.57 85.09) (xy 115.57 91.44)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "710463e4-739e-4c43-a170-2ea6da2653b7")
+	)
+	(wire
+		(pts
 			(xy 180.975 73.66) (xy 180.975 71.12)
 		)
 		(stroke
@@ -3935,7 +3945,7 @@
 	)
 	(wire
 		(pts
-			(xy 115.57 104.14) (xy 115.57 102.362)
+			(xy 115.57 104.14) (xy 115.57 99.06)
 		)
 		(stroke
 			(width 0)
@@ -4215,7 +4225,7 @@
 	)
 	(wire
 		(pts
-			(xy 125.095 92.71) (xy 125.095 93.98)
+			(xy 125.095 92.71) (xy 125.095 113.03)
 		)
 		(stroke
 			(width 0)
@@ -5035,7 +5045,7 @@
 	)
 	(symbol
 		(lib_id "power:+12V")
-		(at 115.57 94.742 0)
+		(at 115.57 85.09 0)
 		(mirror y)
 		(unit 1)
 		(exclude_from_sim no)
@@ -5045,7 +5055,7 @@
 		(fields_autoplaced yes)
 		(uuid "0dfa3216-3b76-4e95-9ae3-bef20e3765a5")
 		(property "Reference" "#PWR028"
-			(at 115.57 98.552 0)
+			(at 115.57 88.9 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5054,7 +5064,7 @@
 			)
 		)
 		(property "Value" "+12V"
-			(at 115.57 89.662 0)
+			(at 115.57 80.01 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5062,7 +5072,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 115.57 94.742 0)
+			(at 115.57 85.09 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5071,7 +5081,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 115.57 94.742 0)
+			(at 115.57 85.09 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5080,7 +5090,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 115.57 94.742 0)
+			(at 115.57 85.09 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5118,7 +5128,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "RXEF010"
+		(property "Value" "LITT RXEF010"
 			(at 70.485 183.515 0)
 			(effects
 				(font
@@ -5528,7 +5538,7 @@
 	)
 	(symbol
 		(lib_id "Device:R")
-		(at 115.57 98.552 0)
+		(at 115.57 95.25 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -5537,7 +5547,7 @@
 		(fields_autoplaced yes)
 		(uuid "25122538-4d68-44ea-948f-d1cd221a6ac6")
 		(property "Reference" "R2"
-			(at 117.475 97.282 0)
+			(at 117.475 93.98 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5546,7 +5556,7 @@
 			)
 		)
 		(property "Value" "10k"
-			(at 117.475 99.822 0)
+			(at 117.475 96.52 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5555,7 +5565,7 @@
 			)
 		)
 		(property "Footprint" "Resistor_SMD:R_0805_2012Metric"
-			(at 113.792 98.552 90)
+			(at 113.792 95.25 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5564,7 +5574,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 115.57 98.552 0)
+			(at 115.57 95.25 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5573,7 +5583,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 115.57 98.552 0)
+			(at 115.57 95.25 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -6591,7 +6601,7 @@
 		(fields_autoplaced yes)
 		(uuid "7d269257-65ee-4769-bea0-562d33b695bf")
 		(property "Reference" "U4"
-			(at 182.9309 71.12 0)
+			(at 183.1691 71.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -6599,8 +6609,8 @@
 				(justify left)
 			)
 		)
-		(property "Value" "ATmega8A-A"
-			(at 182.9309 73.66 0)
+		(property "Value" "ATMEGA8A-AU"
+			(at 183.1691 73.66 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -8416,7 +8426,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 125.095 93.98 0)
+		(at 125.095 113.03 0)
 		(mirror y)
 		(unit 1)
 		(exclude_from_sim no)
@@ -8426,7 +8436,7 @@
 		(fields_autoplaced yes)
 		(uuid "efd5fa20-5fdd-4921-833b-ef475022333c")
 		(property "Reference" "#PWR015"
-			(at 125.095 100.33 0)
+			(at 125.095 119.38 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -8435,7 +8445,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 125.095 99.06 0)
+			(at 125.095 118.11 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -8443,7 +8453,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 125.095 93.98 0)
+			(at 125.095 113.03 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -8452,7 +8462,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 125.095 93.98 0)
+			(at 125.095 113.03 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -8461,7 +8471,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 125.095 93.98 0)
+			(at 125.095 113.03 0)
 			(effects
 				(font
 					(size 1.27 1.27)
