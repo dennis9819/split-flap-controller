@@ -11,9 +11,11 @@
 #include <json-c/json_object.h>
 #include <sys/types.h>
 #include <json-c/json.h>
+#include <ctype.h>
 
 int devicemgr_readStatus(int device_id) ;
 json_object *  devicemgr_printDetails(int device_id);
 json_object * devicemgr_printDetailsAll();
 int devicemgr_register(int rs485_descriptor, u_int16_t address, int x,int y);
 void devicemgr_init();
+int devicemgr_print(char* text);

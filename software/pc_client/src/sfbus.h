@@ -1,4 +1,4 @@
-#include "rs485.h"
+#include "ftdi485.h"
 
 ssize_t sfbus_recv_frame(int fd, u_int16_t address, char *buffer);
 ssize_t sfbus_recv_frame_wait(int fd, u_int16_t address, char *buffer);

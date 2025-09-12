@@ -12,4 +12,3 @@
 #define RS485RX 1
 
 int rs485_init(char *device, int baud);
-int rs485_trdir(int rs485_fd, int level);

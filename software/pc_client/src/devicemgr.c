@@ -47,7 +47,7 @@ int deviceMap[SFDEVICE_MAX_X][SFDEVICE_MAX_Y];
 
 struct SFDEVICE devices[SFDEVICE_MAXDEV];
 
-const char *symbols[] = {" ", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N",
+const char *symbols[45] = {" ", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N",
                          "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "Ä", "Ö", "Ü",
                          "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ":", ".", "-", "?", "!"};
 
@@ -186,9 +186,18 @@ json_object *devicemgr_printDetailsAll()
     return root;
 }
 
-void setSingle(int id, u_int8_t flap)
+void setSingle(int id, char flap)
 {
-    sfbus_display_full(devices[id].rs485_descriptor, devices[id].address, flap);
+    // first convert char to flap id
+    char test_char = toupper(flap);
+    printf("find char %c\n", test_char);
+    for (int ix = 0; ix < 45; ix++){
+        if (*symbols[ix] == test_char){
+            printf("match char %i %i %i\n",test_char, *symbols[ix], ix);
+            sfbus_display_full(devices[id].rs485_descriptor, devices[id].address, ix);
+            break;
+        }
+    }
     devices[nextFreeSlot].current_flap = flap;
 }
 
@@ -199,7 +208,10 @@ void printText(char *text, int x, int y)
         int this_id = deviceMap[x + i][y];
         if (this_id >= 0)
         {
-            setSingle(devices[this_id].address, *(text + i));
+            printf("print char %c to %i\n",*(text + i), devices[this_id].address);
+
+            setSingle(this_id, *(text + i));
+            usleep(5000);
         }
     }
 }

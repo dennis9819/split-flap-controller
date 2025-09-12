@@ -1,4 +1,4 @@
-#include "rs485.h"
+#include "ftdi485.h"
 
 /*
 * Open RS485 Interface (FT232RL)
@@ -43,27 +43,6 @@ int rs485_init(char *device, int baud) {
     close(rs485_fd);
     return -1;
   }
-  rs485_trdir(rs485_fd, 1);
+
   return rs485_fd;
-}
-
-/*
-* Set RS485 Direction (FT232RL - RTS PIN)
-*/
-int rs485_trdir(int rs485_fd, int level) {
-  int status;
-
-  if (ioctl(rs485_fd, TIOCMGET, &status) == -1) {
-    perror("setRTS(): TIOCMGET");
-    return 0;
-  }
-  if (level)
-    status |= TIOCM_DTR;
-  else
-    status &= ~TIOCM_DTR;
-  if (ioctl(rs485_fd, TIOCMSET, &status) == -1) {
-    perror("setRTS(): TIOCMSET");
-    return 0;
-  }
-  return 1;
 }

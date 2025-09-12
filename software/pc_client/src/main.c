@@ -9,7 +9,7 @@
 #include <termios.h> // Contains POSIX terminal control definitions
 #include <unistd.h>  // write(), read(), close()
 
-#include "rs485.h"
+#include "ftdi485.h"
 #include "sfbus.h"
 #include "devicemgr.h"
 
@@ -67,14 +67,18 @@ int main(int argc, char *argv[]) {
 
   // test
   devicemgr_init();
-  devicemgr_register(fd,0,0,0);
-  devicemgr_register(fd,1,1,0);
+  devicemgr_register(fd,1,0,0);
+  devicemgr_register(fd,2,1,0);
+  devicemgr_register(fd,3,2,0);
+  devicemgr_register(fd,4,3,0);
   devicemgr_printDetailsAll();
   //exit(1);
 
   if (strcmp(command, "ping") == 0) {
     sfbus_ping(fd, addr_int);
     exit(0);
+  } else if (strcmp(command, "printf") == 0) {
+    printText(data,0,0);
   } else if (strcmp(command, "r_eeprom") == 0) {
     char *buffer = malloc(64);
     sfbus_read_eeprom(fd, addr_int, buffer);
@@ -99,6 +103,24 @@ int main(int argc, char *argv[]) {
     // modify current addr
     u_int16_t n_addr_16 = n_addr;
     memcpy(buffer_w, &n_addr_16, 2);
+    if (sfbus_write_eeprom(fd, addr_int, buffer_w, buffer_r) < 0) {
+      fprintf(stderr, "Error writing eeprom\n");
+      exit(1);
+    }
+
+    exit(0);
+  } else if (strcmp(command, "w_cal") == 0) {
+    int n_addr = strtol(data, NULL, 10);
+    // read current eeprom status
+    char *buffer_w = malloc(64);
+    char *buffer_r = malloc(64);
+    if (sfbus_read_eeprom(fd, addr_int, buffer_w) < 0) {
+      fprintf(stderr, "Error reading eeprom\n");
+      exit(1);
+    }
+    // modify current addr
+    u_int16_t n_addr_16 = n_addr;
+    memcpy(buffer_w+2, &n_addr_16, 2);
     if (sfbus_write_eeprom(fd, addr_int, buffer_w, buffer_r) < 0) {
       fprintf(stderr, "Error writing eeprom\n");
       exit(1);
