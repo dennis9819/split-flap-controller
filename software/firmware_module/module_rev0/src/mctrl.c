@@ -46,9 +46,15 @@ uint16_t currentVoltage = 0;      // current ADC reading
 uint8_t currentFaultReadings = 0; // ticks with faulty readings (too many will
                                   // trip pwrdwn and sts_flag_fuse)
 
+int STEPS_OFFSET = 0;
 // initialize motor controller
-void mctrl_init()
+void mctrl_init(int cal_offset)
 {
+    if (cal_offset < 800){
+        STEPS_OFFSET = STEPS_OFFSET_DEF;
+    }else{
+        STEPS_OFFSET = cal_offset;
+    }
     DDRC = 0x0F;  // set all pins as outputs
     PORTC = 0x00; // set all to LOW
 

@@ -173,7 +173,7 @@ int main()
 {
     initialSetup();
     rs485_init();
-    mctrl_init();
+    mctrl_init(calib_offset);
 
     while (1 == 1)
     {

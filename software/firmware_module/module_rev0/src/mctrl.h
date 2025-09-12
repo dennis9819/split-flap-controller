@@ -15,7 +15,7 @@
 #define STEPS_PER_REV 2025  // steps per revolution
 #define STEPS_PER_FLAP 45   // steps per flap
 #define STEPS_ADJ 0         // added per flap to compensate for motor power down
-#define STEPS_OFFSET 1400   // ansolute offset between home and first flap
+#define STEPS_OFFSET_DEF 1400   // ansolute offset between home and first flap
 #define AMOUNTFLAPS 45      // amount of flaps installed in system
 #define STEPS_AFTERROT 255  // value to goto after current target flap is reached
 #define ERROR_DATASETS 8    // length of error array
@@ -33,7 +33,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
-void mctrl_init();
+void mctrl_init(int cal_offset);
 void mctrl_step();
 void mctrl_set(uint8_t flap, uint8_t fullRotation);
 
