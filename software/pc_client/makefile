@@ -15,6 +15,7 @@ CFLAGS += -I$(JSON_C_DIR)/include/json-c
 # Or to use lines like: #include <json-c/json_object.h>
 #CFLAGS += -I$(JSON_C_DIR)/include
 LDFLAGS+= -L$(JSON_C_DIR)/lib -ljson-c
+LDFLAGS+= -L$(JSON_C_DIR)/lib -lws
 CPPFLAGS ?= $(INC_FLAGS) -MMD -MP
 
 $(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)
