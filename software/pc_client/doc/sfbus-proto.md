@@ -1,14 +1,23 @@
 # SplitflapBus protocol
 
-The SFBus is an RS485 based protocol. It has a singular master node and up to 32 client nodes per interface.  It can adress up to 65536 devices.
+The SF-Bus is an RS485 based protocol. It has a singular master node and up to 32 client nodes per interface.  It can address up to 65536 devices.
+
+The communication is always initiated by the master node. The start of a new communication is signaled by sending the start byte `0x2B` to the bus, followed by the protocol version and frame length. Each connected node now captures the entire packet. This prevents the node from falsely identifyng payload as a start byte if it contains the value `0x2B`.
+
+Starting after the transmission of the payload length, the receiever counts the remaining packages and terminates the transmission at 0 bytes remaining. 
+
+In version 1.0 it expects the last byte to be `0x24`. If this is not the case, the transmission is marked as invalid and will not be processed further. The client will not send any response.
+
+In version 2.0, the checksum is verified. If it does not match the payload, the transmission is marked as invalid and will not be processed further. The client will not send any response.
+No stop-byte is expected.
 
 ## Packet format (1.0)
 ```
-+------------++----------+--------+---------+----------------+-----------+
-| Start-Byte | Protocol- | Frame- | Adress  | Payload        | Stop-Byte |
-|            | Version   | Length |         |                |           |
-| 0x2B       | 0x00      | 1 byte | 2 bytes | framelegth - 3 | 0x24      |
-+------------+-----------+--------+---------+----------------+-----------+
++------------+-----------+--------+----------+----------------+-----------+
+| Start-Byte | Protocol- | Frame- | Address  | Payload        | Stop-Byte |
+|            | Version   | Length |          |                |           |
+| 0x2B       | 0x00      | 1 byte | 2 bytes  | framelegth - 3 | 0x24      |
++------------+-----------+--------+----------+----------------+-----------+
  The frame length includes the address and stop-byte
  Therefor, the payload is framelegth - 3.
 ```
@@ -16,11 +25,11 @@ The SFBus is an RS485 based protocol. It has a singular master node and up to 32
 ## Packet format (2.0)
 *This i not yet implemented!!*
 ```
-+------------++----------+--------+---------+----------------+-----------+
-| Start-Byte | Protocol- | Frame- | Adress  | Payload        | Checksum  |
-|            | Version   | Length |         |                |           |
-| 0x2B       | 0x00      | 1 byte | 2 bytes | framelegth - 4 | 2 bytes   |
-+------------+-----------+--------+---------+----------------+-----------+
++------------++----------+--------+----------+----------------+-----------+
+| Start-Byte | Protocol- | Frame- | Address  | Payload        | Checksum  |
+|            | Version   | Length |          |                |           |
+| 0x2B       | 0x00      | 1 byte | 2 bytes  | framelegth - 4 | 2 bytes   |
++------------+-----------+--------+----------+----------------+-----------+
  The frame length includes the address and stop-byte
  Therefor, the payload is framelegth - 4.
 ```
