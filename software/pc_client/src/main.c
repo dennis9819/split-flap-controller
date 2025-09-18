@@ -12,6 +12,8 @@
 #include "ftdi485.h"
 #include "sfbus.h"
 #include "devicemgr.h"
+#include "console.h"
+
 
 void printUsage(char *argv[]) {
   fprintf(stderr, "Usage: %s -p <tty> -c <command> [value]\n", argv[0]);
@@ -65,20 +67,10 @@ int main(int argc, char *argv[]) {
   printf("Open device at %s\n", port);
   int fd = rs485_init(port, B19200); // setup rs485
 
-  // test
-  devicemgr_init();
-  devicemgr_register(fd,1,0,0);
-  devicemgr_register(fd,2,1,0);
-  devicemgr_register(fd,3,2,0);
-  devicemgr_register(fd,4,3,0);
-  devicemgr_printDetailsAll();
-  //exit(1);
-
   if (strcmp(command, "ping") == 0) {
-    sfbus_ping(fd, addr_int);
-    exit(0);
+    
   } else if (strcmp(command, "printf") == 0) {
-    printText(data,0,0);
+    devicemgr_printText(data,0,0);
   } else if (strcmp(command, "r_eeprom") == 0) {
     char *buffer = malloc(64);
     sfbus_read_eeprom(fd, addr_int, buffer);
@@ -89,44 +81,12 @@ int main(int argc, char *argv[]) {
     exit(0);
   } else if (strcmp(command, "w_addr") == 0) {
     int n_addr = strtol(data, NULL, 10);
-    if (n_addr < 1) {
-      printf("Please specify new address > 0 with -d\n");
-      exit(-1);
-    }
-    // read current eeprom status
-    char *buffer_w = malloc(64);
-    char *buffer_r = malloc(64);
-    if (sfbus_read_eeprom(fd, addr_int, buffer_w) < 0) {
-      fprintf(stderr, "Error reading eeprom\n");
-      exit(1);
-    }
-    // modify current addr
-    u_int16_t n_addr_16 = n_addr;
-    memcpy(buffer_w, &n_addr_16, 2);
-    if (sfbus_write_eeprom(fd, addr_int, buffer_w, buffer_r) < 0) {
-      fprintf(stderr, "Error writing eeprom\n");
-      exit(1);
-    }
-
-    exit(0);
+    int ret = sfbusu_write_address(fd,addr_int,n_addr);
+    exit(ret);
   } else if (strcmp(command, "w_cal") == 0) {
     int n_addr = strtol(data, NULL, 10);
-    // read current eeprom status
-    char *buffer_w = malloc(64);
-    char *buffer_r = malloc(64);
-    if (sfbus_read_eeprom(fd, addr_int, buffer_w) < 0) {
-      fprintf(stderr, "Error reading eeprom\n");
-      exit(1);
-    }
-    // modify current addr
-    u_int16_t n_addr_16 = n_addr;
-    memcpy(buffer_w+2, &n_addr_16, 2);
-    if (sfbus_write_eeprom(fd, addr_int, buffer_w, buffer_r) < 0) {
-      fprintf(stderr, "Error writing eeprom\n");
-      exit(1);
-    }
-
-    exit(0);
+    int ret = sfbusu_write_calibration(fd,addr_int,n_addr);
+    exit(ret);
   } else if (strcmp(command, "status") == 0) {
     double voltage = 0;
     u_int32_t counter = 0;
@@ -165,20 +125,11 @@ int main(int argc, char *argv[]) {
   } else if (strcmp(command, "power_off") == 0) {
     sfbus_motor_power(fd, addr_int,0);
     exit(0);
+  } else if (strcmp(command, "server") == 0){
+    start_console(fd);
   } else {
     fprintf(stderr, "Invalid command specified!\n");
     printUsage(argv);
   }
-
-  char *buffer = malloc(256);
-  char *cmd = "\xF0";
-
-  sfbus_send_frame(fd, 0, strlen(cmd), cmd);
-
-  int len = sfbus_recv_frame_wait(fd, 0xFFFF, buffer);
-  // printf("TEST:%i %s\n", len, buffer);
-
-  free(buffer);
-
   return 0;
 }

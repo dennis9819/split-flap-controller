@@ -107,14 +107,10 @@ void sfbus_send_frame(int fd, u_int16_t address, u_int8_t length,
   }
   *frame = '$'; // startbyte
 
-  //rs485_trdir(fd, 0);
-
   int result = write(fd, frame_ptr, frame_size_complete);
   print_bufferHexTx(frame_ptr + 5, frame_size_complete - 6, address);
   free(frame_ptr);
-  // tcdrain(fd);
-  //usleep(470 * (frame_size_complete + 1));
-  //rs485_trdir(fd, 1);
+
 }
 
 int sfbus_ping(int fd, u_int16_t address) {
