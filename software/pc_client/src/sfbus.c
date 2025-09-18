@@ -157,23 +157,26 @@ void sfbus_send_frame_v2(int fd, u_int16_t address, u_int8_t length, char *buffe
 
     // add crc to end of frame
     u_int16_t crc = calc_CRC16(buffer, length);          // calculate CRC
-    *(frame + (frame_size_complete - 1)) = (crc);        // addres high byte
+    *(frame + (frame_size_complete - 1)) = (crc);        // address high byte
     *(frame + (frame_size_complete - 0)) = ((crc >> 8)); // address low byte
 
     // send data
     int result = write(fd, frame, frame_size_complete);
     print_bufferHexTx(frame, frame_size_complete, address);
-    free(frame);  // free frame buffer
+    free(frame); // free frame buffer
 }
 
-
+/*
+* Send ping to device at specified address.
+* returns 0 on success, else 1.
+*/
 int sfbus_ping(int fd, u_int16_t address)
 {
-    char *cmd = "\xFE";
-    char *buffer = malloc(64);
+    char *cmd = "\xFE";        // command byte for ping
+    char *buffer = malloc(64); // allocate rx buffer
     sfbus_send_frame_v2(fd, address, strlen(cmd), cmd);
     int len = sfbus_recv_frame_wait(fd, 0xFFFF, buffer);
-    if (len == 4 && *buffer == (char)0xFF)
+    if (len == 4 && *buffer == (char)0xFF) // expect 0xFF on successful ping
     {
         printf("Ping okay!\n");
         free(buffer);
