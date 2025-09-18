@@ -143,15 +143,15 @@ void sfbus_send_frame(int fd, u_int16_t address, u_int8_t length, char *buffer)
 */
 void sfbus_send_frame_v2(int fd, u_int16_t address, u_int8_t length, char *buffer)
 {
-    int frame_size_complete = length + 7; // calculate size of complete transmission
-                                          // (including header, payload and crc)
-    char *frame = malloc(frame_size_complete);
+    int frame_size_complete = length + 7;      // calculate size of complete transmission
+                                               // (header + frame)
+    char *frame = malloc(frame_size_complete); // allocate frame buffer
 
     // assemble tx data
-    *(frame + 0) = '+';                // startbyte (0x2B)
+    *(frame + 0) = 0x2B;               // startbyte
     *(frame + 1) = 0x01;               // protocol version (v2.0)
     *(frame + 2) = length + 4;         // length of frame
-    *(frame + 3) = (address);          // addres high byte
+    *(frame + 3) = (address);          // address high byte
     *(frame + 4) = ((address >> 8));   // address low byte
     memcpy(frame + 5, buffer, length); // copy payload to packet
 
