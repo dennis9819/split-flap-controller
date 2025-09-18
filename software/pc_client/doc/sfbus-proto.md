@@ -7,25 +7,25 @@
 ## Protocol implementation
 The SF-Bus is an RS485 based protocol. It has a singular master node and up to 32 client *nodes* per interface.  It can address up to 65536 *devices*.
 
-The communication is always initiated by the *main controller interface*.
+The communication is always initiated by the *main controller interface*, serving as the bus *master*.
 The start of a new communication is signaled by sending the start byte `0x2B` to the bus, followed by the protocol version (8-bit) and frame length (8-Bit). Each connected *node* now captures the entire packet, even if the adress does not match its own. This reduces the risk of the *node* falsely identifying payload data as a start byte if it contains the value `0x2B`.
 
 After the transmission of the payload length, the receiver *node* counts the remaining packages and terminates the transmission at 0 bytes remaining. The data is written to a buffer for further processing.
 
-In version 1.0, the receiving *node* expects the last byte to be `0x24`. If this is not the case, the transmission is marked as invalid and will not be processed further. The receiving *node* will not send any response.
+In protocol version 1.0, the receiving *node* expects the last byte to be `0x24`. If this is not the case, the transmission is marked as invalid and will not be processed further. The receiving *node* will not send any response.
 
-In version 2.0, the checksum is verified. If it does not match the payload, the transmission is marked as invalid and will not be processed further. The receiving *node* will not send any response.
-No stop-byte is expected. Version 2.0 also requires a timeout-check in the receiving function. This allows the bus to support hot-plugging, to cancel incomplete or invalid packages and reliably detect the start of a new package.
+In protocol version 2.0, the checksum is verified. If it does not match the payload, the transmission is marked as invalid and will not be processed further. The receiving *node* will not send any response.
+No stop-byte is expected. Version 2.0 also requires a timeout-check in the receiving function. This allows the bus to support hot-plugging, to cancel incomplete or invalid packages and reliably detect the start of a new transmission.
 
-The communication is typically unidirectional. Lost transmissions are not detectable. The *flap controller* NEVER initiates a communication to the *main controller interface*. *node* to *master* communication only occures as a response to specific commands. This is specified in the command / payload documentation.
+The communication is typically unidirectional. Lost transmissions are not detectable. The *flap controller* NEVER initiates a communication to the *main controller interface*. *node* to *master* communication only occures in response to specific commands. This is specified in the command / payload documentation.
 
 ## Packet format (1.0)
 ```
 +---------------------------------+----------------------------------------+
 | Header                          | Frame                                  |
 +------------+-----------+--------+----------+-----------------+-----------+
-| Start-Byte | Protocol- | Frame- | Address  | Payload         | Stop-Byte |
-|            | Version   | Length |          |                 |           |
+| Start-Byte | Protocol- | Frame- | Receiver | Payload         | Stop-Byte |
+|            | Version   | Length | Address  |                 |           |
 | 0x2B       | 0x00      | 1 byte | 2 bytes  | framelemgth - 3 | 0x24      |
 +------------+-----------+--------+----------+-----------------+-----------+
  The frame length includes the address and stop-byte
@@ -38,8 +38,8 @@ The communication is typically unidirectional. Lost transmissions are not detect
 +---------------------------------+----------------------------------------+
 | Header                          | Frame                                  |
 +------------+-----------+--------+----------+-----------------+-----------+
-| Start-Byte | Protocol- | Frame- | Address  | Payload         | Checksum  |
-|            | Version   | Length |          |                 |           |
+| Start-Byte | Protocol- | Frame- | Receiver | Payload         | Checksum  |
+|            | Version   | Length | Address  |                 |           |
 | 0x2B       | 0x01      | 1 byte | 2 bytes  | framelength - 4 | 2 bytes   |
 +------------+-----------+--------+----------+-----------------+-----------+
  The frame length includes the 16-bit address and 16 bit checksum.
@@ -92,12 +92,14 @@ Can also be done to clear error flags
 - Expects no response.
 
 ### Read EEPROM
+Read address and calibration configuration from internal non-volatile memory.
 - Payload `0xF0`
 - Response is `0xAA` followed by content of EEPROM (5 bytes). See mapping below.
 
 ### Write EEPROM
+Write address and calibration configuration to internal non-volatile memory.
 - Payload `0xF1 <5 bytes of eeprom content>`
-- Response is `0xAA` followed by new content of EEPROM. See mapping below.
+- Response is `0xAA` followed by new content of EEPROM (5 bytes). See mapping below.
 
 ### Get controller status
 - Payload `0xF8`
@@ -139,3 +141,8 @@ Can also be done to clear error flags
   |
   +-> uint16 device address
 ```
+
+## Address management
+* Address `0x0000` is reserved for new devices. These devices needs a new address before it can be used. Use the `Write EEPROM` method to change it.
+* Address `0xFFFF` is reserved for the bus *master* and must never be used by another node. Each *node* to *master* response package must be sent to this address.
+* All remaining addresses can be freely assigned.
