@@ -155,7 +155,7 @@ void sfbus_send_frame_v2(int fd, u_int16_t address, u_int8_t length, char *buffe
     *(frame + 4) = ((address >> 8));   // address low byte
     memcpy(frame + 5, buffer, length); // copy payload to packet
 
-    // add crc to frame
+    // add crc to end of frame
     u_int16_t crc = calc_CRC16(buffer, length);          // calculate CRC
     *(frame + (frame_size_complete - 1)) = (crc);        // addres high byte
     *(frame + (frame_size_complete - 0)) = ((crc >> 8)); // address low byte
@@ -163,7 +163,7 @@ void sfbus_send_frame_v2(int fd, u_int16_t address, u_int8_t length, char *buffe
     // send data
     int result = write(fd, frame, frame_size_complete);
     print_bufferHexTx(frame, frame_size_complete, address);
-    free(frame);  // free malloc
+    free(frame);  // free frame buffer
 }
 
 
