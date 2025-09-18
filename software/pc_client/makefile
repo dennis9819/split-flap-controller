@@ -1,3 +1,12 @@
+#
+# This file is part of the split-flap project.
+# Copyright (c) 2024-2025 GuniaLabs (www.dennisgunia.de)
+# Authors: Dennis Gunia
+#
+# This program is licenced under AGPL-3.0 license.
+#
+#
+
 TARGET_EXEC ?= a.out
 
 BUILD_DIR ?= ./build

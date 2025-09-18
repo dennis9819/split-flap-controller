@@ -1,10 +1,17 @@
+/*
+ * This file is part of the split-flap project.
+ * Copyright (c) 2024-2025 GuniaLabs (www.dennisgunia.de)
+ * Authors: Dennis Gunia
+ *
+ * This program is licenced under AGPL-3.0 license.
+ *
+ */
+
 #include "wsserver.h"
 
 /*
  * This section provides a web server to controll the
  * device manager through web sockets
- * 
- * by Dennis Gunia - 2025 - www.dennisgunia.de
  */
 
 json_object *(*commandparser_func)(json_object *);

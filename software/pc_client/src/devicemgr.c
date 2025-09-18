@@ -1,13 +1,18 @@
+/*
+ * This file is part of the split-flap project.
+ * Copyright (c) 2024-2025 GuniaLabs (www.dennisgunia.de)
+ * Authors: Dennis Gunia
+ *
+ * This program is licenced under AGPL-3.0 license.
+ *
+ * This section provides an abstraction layer to access many devices
+ * simultaneously
+ */
+
 #include "devicemgr.h"
 #include <json-c/json_object.h>
 #include <string.h>
 
-/*
- * This section provides an abstraction layer to access many devices
- * simultaneously. 
- * 
- * by Dennis Gunia - 2025 - www.dennisgunia.de
- */
 enum SFDEVICE_STATE
 {
     UNALLOCATED,
