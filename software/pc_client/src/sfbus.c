@@ -137,25 +137,33 @@ void sfbus_send_frame(int fd, u_int16_t address, u_int8_t length, char *buffer)
     free(frame_ptr);
 }
 
+
+/*
+* Send SFBus frame with protocol version 2.0 and calculated CRC
+*/
 void sfbus_send_frame_v2(int fd, u_int16_t address, u_int8_t length, char *buffer)
 {
-    int frame_size_complete = length + 7;
+    int frame_size_complete = length + 7; // calculate size of complete transmission
+                                          // (including header, payload and crc)
     char *frame = malloc(frame_size_complete);
 
-    *(frame + 0) = '+';                // startbyte
-    *(frame + 1) = 1;                  // protocol version
-    *(frame + 2) = length + 4;         // length
+    // assemble tx data
+    *(frame + 0) = '+';                // startbyte (0x2B)
+    *(frame + 1) = 0x01;               // protocol version (v2.0)
+    *(frame + 2) = length + 4;         // length of frame
     *(frame + 3) = (address);          // addres high byte
     *(frame + 4) = ((address >> 8));   // address low byte
-    memcpy(frame + 5, buffer, length); // copy data to packet
+    memcpy(frame + 5, buffer, length); // copy payload to packet
 
+    // add crc to frame
     u_int16_t crc = calc_CRC16(buffer, length);          // calculate CRC
     *(frame + (frame_size_complete - 1)) = (crc);        // addres high byte
     *(frame + (frame_size_complete - 0)) = ((crc >> 8)); // address low byte
 
+    // send data
     int result = write(fd, frame, frame_size_complete);
     print_bufferHexTx(frame, frame_size_complete, address);
-    free(frame);
+    free(frame);  // free malloc
 }
 
 
