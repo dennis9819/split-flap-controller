@@ -9,7 +9,7 @@
 
 #include "console.h"
 
-const char *device_config_file = "./flapconfig.json";
+char *device_config_file = "./flapconfig.json";
 int fd;
 // command handlers
 
@@ -133,7 +133,7 @@ void cmd_dm_print(json_object *req, json_object *res)
     {
         int x = json_object_get_int(jx);
         int y = json_object_get_int(jy);
-        char *str = json_object_get_string(jstr);
+        const char *str = json_object_get_string(jstr);
         devicemgr_printText(str, x, y);
         json_object_object_add(res, "ack", json_object_new_boolean(true));
     }
@@ -332,7 +332,7 @@ json_object *parse_command(json_object *req)
     json_object *commandObj;
     json_object *res = json_object_new_object();
     json_object_object_get_ex(req, "command", &commandObj);
-    char *command = json_object_get_string(commandObj);
+    const char *command = json_object_get_string(commandObj);
     free(commandObj);
     // command 'table'
     if (strcmp(command, "dm_dump") == 0)

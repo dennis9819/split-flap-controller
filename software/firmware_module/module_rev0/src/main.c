@@ -61,7 +61,8 @@ void initialSetup()
 void readCommand()
 {
     char *payload = malloc(PROTO_MAXPKGLEN);
-    uint8_t payload_len = sfbus_recv_frame(address, payload);
+    uint8_t payload_len = sfbus_recv_frame_v2(address, payload);
+    payload += 2; // skip address bytes
     if (payload_len > 0)
     {
         // read command byte
@@ -90,7 +91,7 @@ void readCommand()
                 *(msg + i) = (char)eeprom_read_c(i - 1);
             }
             _delay_ms(2);
-            sfbus_send_frame(0xFFFF, msg, bytes + 1);
+            sfbus_send_frame_v2(0xFFFF, msg, bytes + 1);
             free(msg);
         }
         else if (opcode == CMDB_EEPROMW)
@@ -111,7 +112,7 @@ void readCommand()
                 *(msg + i) = (char)eeprom_read_c(i - 1);
             }
             _delay_ms(2);
-            sfbus_send_frame(0xFFFF, msg, bytes + 1);
+            sfbus_send_frame_v2(0xFFFF, msg, bytes + 1);
             free(msg);
             // now use new addr
             uint8_t addrL = eeprom_read_c(CONF_ADDR_ADDR);
@@ -131,14 +132,14 @@ void readCommand()
             *(msg + 4) = (char)((counter >> SHIFT_2B) & 0xFF);
             *(msg + 3) = (char)((counter >> SHIFT_3B) & 0xFF);
             _delay_ms(2);
-            sfbus_send_frame(0xFFFF, msg, 7);
+            sfbus_send_frame_v2(0xFFFF, msg, 7);
             free(msg);
         }
         else if (opcode == CMDB_PING)
         {
             char msg = (char)CMDR_PING;
             _delay_ms(2);
-            sfbus_send_frame(0xFFFF, &msg, 1);
+            sfbus_send_frame_v2(0xFFFF, &msg, 1);
         }
         else if (opcode == CMDB_RPWROFF)
         {
@@ -163,7 +164,7 @@ void readCommand()
             // invalid opcode
             char msg = CMDR_ERR_INVALID;
             _delay_ms(2);
-            sfbus_send_frame(0xFFFF, &msg, 1);
+            sfbus_send_frame_v2(0xFFFF, &msg, 1);
         }
     }
     free(payload);

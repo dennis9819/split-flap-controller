@@ -18,7 +18,7 @@ json_object *(*commandparser_func)(json_object *);
 
 // this sections handles ws connections and communications
 // called on opening websocket client
-void onopen(ws_cli_conn_t client)
+void ws_opencon(ws_cli_conn_t client)
 {
     char *cli;
     cli = ws_getaddress(client);
@@ -26,7 +26,7 @@ void onopen(ws_cli_conn_t client)
 }
 
 // called on closing websocket client
-void onclose(ws_cli_conn_t client)
+void ws_closecon(ws_cli_conn_t client)
 {
     char *cli;
     cli = ws_getaddress(client);
@@ -34,7 +34,7 @@ void onclose(ws_cli_conn_t client)
 }
 
 // called on receiving websocket message
-void onmessage(ws_cli_conn_t client, const unsigned char *msg, uint64_t size, int type)
+void ws_messagehandler(ws_cli_conn_t client, const unsigned char *msg, uint64_t size, int type)
 {
     char *cli = ws_getaddress(client);
     printf("received message: %s (%zu), from: %s\n", msg, size, cli);
@@ -55,7 +55,7 @@ void onmessage(ws_cli_conn_t client, const unsigned char *msg, uint64_t size, in
         printf("test");
         if (commandObj != NULL)
         {
-            char *command = json_object_to_json_string(commandObj);
+            const char *command = json_object_to_json_string(commandObj);
             // get key
             json_object *res = commandparser_func(req);
             if (res == NULL)
@@ -79,11 +79,11 @@ void onmessage(ws_cli_conn_t client, const unsigned char *msg, uint64_t size, in
 
 void send_json_response(ws_cli_conn_t client, json_object *res)
 {
-    char *message = json_object_to_json_string_ext(res, JSON_C_TO_STRING_PRETTY);
+    const char *message = json_object_to_json_string_ext(res, JSON_C_TO_STRING_PRETTY);
     ws_sendframe_txt(client, message);
 }
 
-void send_json_error(ws_cli_conn_t client, char *error, char *detail)
+void send_json_error(ws_cli_conn_t client, char *error, const char *detail)
 {
     json_object *root = json_object_new_object();
     json_object_object_add(root, "error", json_object_new_string(error));
@@ -105,9 +105,9 @@ int start_webserver(json_object *(*commandparser_func_ptr)(json_object *))
                                   .port = WS_SERVER_PORT,
                                   .thread_loop = 0,
                                   .timeout_ms = 1000,
-                                  .evs.onopen = &onopen,
-                                  .evs.onclose = &onclose,
-                                  .evs.onmessage = &onmessage});
+                                  .evs.onopen = &ws_opencon,
+                                  .evs.onclose = &ws_closecon,
+                                  .evs.onmessage = &ws_messagehandler});
 
     return (0);
 }

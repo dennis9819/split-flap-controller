@@ -9,9 +9,9 @@
 
 #include "ftdi485.h"
 
-ssize_t sfbus_recv_frame(int fd, u_int16_t address, char *buffer);
+ssize_t sfbus_recv_frame_v2(int fd, u_int16_t address, char *buffer);
 ssize_t sfbus_recv_frame_wait(int fd, u_int16_t address, char *buffer);
-void sfbus_send_frame(int fd, u_int16_t address, u_int8_t length, char *buffer);
+void sfbus_send_frame_v2(int fd, u_int16_t address, u_int8_t length, char *buffer);
 void print_charHex(char *buffer, int length);
 int sfbus_ping(int fd, u_int16_t address);
 int sfbus_read_eeprom(int fd, u_int16_t address, char* buffer);

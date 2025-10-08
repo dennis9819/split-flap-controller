@@ -6,6 +6,7 @@
  * https://github.com/dennis9819/splitflap_v1
  */
 
+#include "mctrl.h"
 #include "rs485.h"
 
 void rs485_init()
@@ -21,14 +22,7 @@ void rs485_init()
     UCSRC |= (1 << URSEL) | (1 << UCSZ0) | (1 << UCSZ1); // 8bit data format
 }
 
-void dbg(char data)
-{
-    while (!(UCSRA & (1 << UDRE)))
-        ;
-    UDR = data;
-}
-
-
+// send byte over rs485
 void rs485_send_c(char data)
 {
     PORTD |= (1 << PD2); // set transciever to transmitt
@@ -39,17 +33,10 @@ void rs485_send_c(char data)
     while (!(UCSRA & (1 << TXC)))
     {
     }; // wait until transmitt complete
-    PORTD &= ~(1 << PD2); // set transciever to transmitt
+    PORTD &= ~(1 << PD2); // set transciever back to receive
 }
 
-void rs485_send_str(char *data)
-{
-    for (unsigned int i = 0; i < sizeof(data); i++)
-    {
-        rs485_send_c(data[i]);
-    }
-}
-
+// receive without timeout
 char rs485_recv_c()
 {
     while (!(UCSRA & (1 << RXC)))
@@ -57,42 +44,69 @@ char rs485_recv_c()
     return UDR;
 }
 
-// SFBUS Functions
-uint8_t sfbus_recv_frame(uint16_t address, char *payload)
+// receive with timeout
+int rs485_recv_c_rxout(uint8_t timeout, char *data)
 {
-    while (rs485_recv_c() != SFBUS_SOF_BYTE)
+    timer_ticks = 0;
+    while (!(UCSRA & (1 << RXC)))
     {
-    } // Wwait for start byte
-
-    uint8_t frm_version = rs485_recv_c();
-    if (frm_version != 0)
-        return 0;
-    uint8_t frm_length = rs485_recv_c();
-    uint8_t frm_addrL = rs485_recv_c();
-    uint8_t frm_addrH = rs485_recv_c();
-
-    uint16_t frm_addr = frm_addrL | (frm_addrH << SHIFT_1B);
-    if (frm_addr != address)
-        return 0;
-    char *_payload = payload;
-    for (uint8_t i = 0; i < (frm_length - 3); i++)
-    {
-        *_payload = rs485_recv_c();
-        _payload++;
+        if (timer_ticks > timeout)
+        {
+            return 0;
+        }
     }
-
-    if (rs485_recv_c() != SFBUS_EOF_BYTE)
-        return -1;
-    return frm_length;
+    *data = UDR;
+    return 1;
 }
 
-void sfbus_send_frame(uint16_t address, char *payload, uint8_t length)
+// SFBUS Functions
+// receive paket with crc checking and timeout
+uint8_t sfbus_recv_frame_v2(uint16_t address, char *payload)
+{
+    const uint8_t RX_TIMEOUT = 2;
+    while (rs485_recv_c() != SFBUS_SOF_BYTE)
+    {
+    } // Wait for start byte
+    uint8_t frm_version, frm_length;
+    if (rs485_recv_c_rxout(RX_TIMEOUT, (char *)&frm_version) == 0) // read header: version
+        return -1;
+    if (rs485_recv_c_rxout(RX_TIMEOUT, (char *)&frm_length) == 0) // read header: payload length
+        return -1;
+
+    // ALWAYS!!! receive full packet to avoid sync error
+    for (int i = 0; i < frm_length; i++)
+    {
+        if (rs485_recv_c_rxout(RX_TIMEOUT, payload + i) == 0)
+        {
+            return -1;
+        }
+    }
+    // check protocol version
+    if (frm_version != 0x01)
+    {
+        return -1; // abort on incompatible version
+    }
+    // if version matches, read address and checksum
+    uint16_t recv_addr = (*(payload + 0) & 0xFF) | ((*(payload + 1) & 0xFF) << SHIFT_1B);
+    uint16_t checksum = (*(payload + (frm_length - 2)) & 0xFF) | ((*(payload + (frm_length - 1)) & 0xFF) << SHIFT_1B);
+
+    // calculate checksum of received payload
+    uint16_t checksum_calc = calc_CRC16(payload + 2, frm_length - 4);
+
+    // return length on valid address and crc, return 0 to ignore
+    return (checksum == checksum_calc && address == recv_addr) ? frm_length : 0;
+}
+
+// send paket with crc 
+void sfbus_send_frame_v2(uint16_t address, char *payload, uint8_t length)
 {
     uint8_t framelen = length;
+    // claculate crc value
+    uint16_t crc = calc_CRC16(payload, framelen);
 
-    rs485_send_c(SFBUS_SOF_BYTE); // send startbyte 3 times
-    rs485_send_c(0);              // send protocol version
-    rs485_send_c((char)(framelen + 3));   // send lentgh of remaining frame
+    rs485_send_c(SFBUS_SOF_BYTE);       // send startbyte
+    rs485_send_c(1);                    // send protocol version
+    rs485_send_c((char)(framelen + 4)); // send lentgh of remaining frame
 
     rs485_send_c((char)(address & 0xFF)); // target address
     rs485_send_c((char)((address >> SHIFT_1B) & 0xFF));
@@ -104,5 +118,32 @@ void sfbus_send_frame(uint16_t address, char *payload, uint8_t length)
         framelen--;
     }
 
-    rs485_send_c(SFBUS_EOF_BYTE); // send end of frame byte
+    rs485_send_c((char)(crc & 0xFF)); // send crc
+    rs485_send_c((char)((crc >> SHIFT_1B) & 0xFF));
+}
+
+// calculate crc checksum
+uint16_t calc_CRC16(char *buffer, uint8_t len)
+{
+    uint16_t crc16 = 0xFFFF;
+    for (uint8_t pos = 0; pos < len; pos++)
+    {
+        char byte_value = *(buffer); // read byte after byte from buffer
+        buffer++;
+
+        crc16 ^= byte_value; // XOR byte into least sig. byte of crc
+        for (int i = 8; i != 0; i--)
+        { // Loop over each bit
+            if ((crc16 & 0x0001) != 0)
+            {                // If the LSB is set
+                crc16 >>= 1; // Shift right and XOR 0xA001
+                crc16 ^= 0xA001;
+            }
+            else
+            {                // Else LSB is not set
+                crc16 >>= 1; // Just shift right
+            }
+        }
+    }
+    return crc16;
 }

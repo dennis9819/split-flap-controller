@@ -12,6 +12,7 @@
 #include "devicemgr.h"
 #include <json-c/json_object.h>
 #include <string.h>
+#include <sys/types.h>
 
 enum SFDEVICE_STATE
 {
@@ -28,6 +29,7 @@ enum SFDEVICE_POWER
     ENABLED,
     UNKNOWN
 };
+
 
 struct SFDEVICE
 {
@@ -262,7 +264,7 @@ void setSingleRaw(int id, int flap)
     devices[nextFreeSlot].current_flap = flap;
 }
 
-void devicemgr_printText(char *text, int x, int y)
+void devicemgr_printText(const char *text, int x, int y)
 {
     for (int i = 0; i < strlen(text); i++)
     {
@@ -340,7 +342,7 @@ int devicemgr_remove(int id)
 {
     devices[nextFreeSlot].deviceState = REMOVED;
     devices[nextFreeSlot].address = 0;
-    devices[nextFreeSlot].rs485_descriptor = NULL;
+    devices[nextFreeSlot].rs485_descriptor = -1;
     return 0;
 }
 
@@ -361,7 +363,7 @@ int devicemgr_save(char *file)
 
     json_object_object_add(root, "devices", device_array);
 
-    char *data = json_object_to_json_string_ext(root, JSON_C_TO_STRING_PRETTY);
+    const char *data = json_object_to_json_string_ext(root, JSON_C_TO_STRING_PRETTY);
     printf("[INFO][console] store data to %s\n", file);
 
     FILE *fptr;
@@ -373,7 +375,7 @@ int devicemgr_save(char *file)
 int devicemgr_load(char *file)
 {
     FILE *fptr;
-    const char *line_in_file = malloc(JSON_MAX_LINE_LEN); // maximum of 256 bytes per line;
+    char *line_in_file = malloc(JSON_MAX_LINE_LEN); // maximum of 256 bytes per line;
     fptr = fopen(file, "r");
     json_tokener *tok = json_tokener_new();
     json_object *jobj = NULL;
@@ -382,7 +384,7 @@ int devicemgr_load(char *file)
 
     do
     {
-        int read_ret = fgets(line_in_file, JSON_MAX_LINE_LEN, fptr); // read line from file
+        char* read_ret = fgets(line_in_file, JSON_MAX_LINE_LEN, fptr); // read line from file
         stringlen = strlen(line_in_file);
         // printf("Read line with chars: %i : %s", stringlen, line_in_file); // only for testing
         jobj = json_tokener_parse_ex(tok, line_in_file, stringlen);

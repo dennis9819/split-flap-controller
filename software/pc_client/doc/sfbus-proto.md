@@ -14,26 +14,12 @@ After the transmission of the payload length, the receiver *node* counts the rem
 
 In protocol version 1.0, the receiving *node* expects the last byte to be `0x24`. If this is not the case, the transmission is marked as invalid and will not be processed further. The receiving *node* will not send any response.
 
-In protocol version 2.0, the checksum is verified. If it does not match the payload, the transmission is marked as invalid and will not be processed further. The receiving *node* will not send any response.
+In protocol version 2.0, the checksum of the payload is verified. If it does not match the payload, the transmission is marked as invalid and will not be processed further. The receiving *node* will not send any response.
 No stop-byte is expected. Version 2.0 also requires a timeout-check in the receiving function. This allows the bus to support hot-plugging, to cancel incomplete or invalid packages and reliably detect the start of a new transmission.
 
 The communication is typically unidirectional. Lost transmissions are not detectable. The *flap controller* NEVER initiates a communication to the *main controller interface*. *node* to *master* communication only occures in response to specific commands. This is specified in the command / payload documentation.
 
-## Packet format (1.0)
-```
-+---------------------------------+----------------------------------------+
-| Header                          | Frame                                  |
-+------------+-----------+--------+----------+-----------------+-----------+
-| Start-Byte | Protocol- | Frame- | Receiver | Payload         | Stop-Byte |
-|            | Version   | Length | Address  |                 |           |
-| 0x2B       | 0x00      | 1 byte | 2 bytes  | framelemgth - 3 | 0x24      |
-+------------+-----------+--------+----------+-----------------+-----------+
- The frame length includes the address and stop-byte
- Therefor, the payload is framelegth - 3.
-```
-
 ## Packet format (2.0)
-*This is not yet implemented!!*
 ```
 +---------------------------------+----------------------------------------+
 | Header                          | Frame                                  |
@@ -46,6 +32,7 @@ The communication is typically unidirectional. Lost transmissions are not detect
  Therefor, the payload is framelegth - 4.
 
  Checksum is based on MODBUS CRC algorithm. Check implementation in sfbus.c
+ Checksum is only created for the payload, not the entire frame or packet.
 ```
 
 More infromation regarding the crc algorithm: https://ctlsys.com/support/how_to_compute_the_modbus_rtu_message_crc/

@@ -42,6 +42,7 @@ uint8_t getSts();
 uint16_t getVoltage();
 void mctrl_power(uint8_t state);
 
+uint16_t timer_ticks;
 #ifdef __cplusplus
 }
 #endif // __cplusplus

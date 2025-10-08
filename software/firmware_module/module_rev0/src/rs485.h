@@ -9,24 +9,29 @@
 
 #pragma once
 //#define F_CPU 16000000UL
-#define UART_BAUD 19200     // RS485 baud rate
-#define BAUDRATE ((F_CPU) / (UART_BAUD * 16UL) - 1)  // set baud rate value for UBRR
+//#define UART_BAUD 19200     // RS485 baud rate
+#define UART_BAUD 57600                             // RS485 baud rate
+#define BAUDRATE ((F_CPU) / (UART_BAUD * 16UL) - 1) // set baud rate value for UBRR
 
-#define SFBUS_SOF_BYTE '+'  // Byte marks start of frame
-#define SFBUS_EOF_BYTE '$'  // Byte marks end of frame
+#define SFBUS_SOF_BYTE '+' // Byte marks start of frame
+#define SFBUS_EOF_BYTE '$' // Byte marks end of frame
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif // __cplusplus
-void dbg(char data);
 
-void rs485_init(void);
-void rs485_send_c(char data);
-void rs485_send_str(char* data);
-char rs485_recv_c(void);
+    void rs485_init(void);
+    void rs485_send_c(char data);
+    char rs485_recv_c(void);
+    int rs485_recv_c_rxout(uint8_t timeout, char *data);
 
-uint8_t sfbus_recv_frame(uint16_t address, char* payload);
-void sfbus_send_frame(uint16_t address, char* payload, uint8_t length);
+    uint8_t sfbus_recv_frame_v2(uint16_t address, char *payload);
+    void sfbus_send_frame_v2(uint16_t address, char *payload, uint8_t length);
+    uint16_t calc_CRC16(char *buffer, uint8_t len);
+
+    // auxilary var for uart timeout
+    extern uint16_t timer_ticks;
 
 #ifdef __cplusplus
 }

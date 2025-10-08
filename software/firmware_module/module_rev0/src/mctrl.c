@@ -45,6 +45,7 @@ uint8_t sts_flag_busy = 0;        // device is busy
 uint16_t currentVoltage = 0;      // current ADC reading
 uint8_t currentFaultReadings = 0; // ticks with faulty readings (too many will
                                   // trip pwrdwn and sts_flag_fuse)
+uint16_t timer_ticks = 0;
 
 int STEPS_OFFSET = 0;
 // initialize motor controller
@@ -109,6 +110,7 @@ void readVoltage()
 // MAIN service routine. Called by timer 1
 ISR(TIMER1_COMPA_vect)
 {
+    timer_ticks ++;
     readVoltage(); // read and check voltage
     if (sts_flag_pwrdwn == 1 || sts_flag_failsafe == 1)
     {
@@ -239,7 +241,7 @@ uint8_t getSts()
     status |= sts_flag_fuse << 2;          // bit 2: fuse blown
     status |= sts_flag_pwrdwn << 4;        // bit 4: device powered down
     status |= sts_flag_failsafe << 5;      // bit 5: failsafe active
-    status |= sts_flag_busy << 6;          // bit 6: failsafe active
+    status |= sts_flag_busy << 6;          // bit 6: device busy
     if ((PIND & (1 << PD3)) == 0)
     {
         status |= (1 << 3);

@@ -3,14 +3,7 @@
  * Copyright (c) 2024-2025 GuniaLabs (www.dennisgunia.de)
  * Authors: Dennis Gunia
  *
- * This program is free software (...)
- * You should have received a copy of the GNU Affero General Public License
- * along with this program (...)
- *
- * You can be released from the requirements of the license by purchasing
- * a commercial license. Buying such a license is mandatory as soon as you
- * develop commercial activities involving the split-flap software without
- * disclosing the source code of your own applications (...)
+ * This program is licenced under AGPL-3.0 license.
  *
  */
 
@@ -28,6 +21,7 @@
 #include "ftdi485.h"
 #include "sfbus.h"
 
+extern char *optarg;
 
 void printUsage(char *argv[])
 {
@@ -86,7 +80,7 @@ int main(int argc, char *argv[])
     setvbuf(stdout, NULL, _IONBF, 0); // do not buffer stdout!!!!
 
     printf("Open device at %s\n", port);
-    int fd = rs485_init(port, B19200); // setup rs485
+    int fd = rs485_init(port, B57600); // setup rs485
 
     if (strcmp(command, "ping") == 0)
     {
