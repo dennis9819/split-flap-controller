@@ -1,22 +1,25 @@
 {
-  "env": {
-    "arduino_path": "/home/dennisgunia/.arduino15/packages/arduino",
-    "arduino_avr_include2_path": "${env:arduino_path}/tools/avr-gcc/7.3.0-atmel3.6.1-arduino7/avr/include"
-  },
-  "configurations": [
-    {
-      "name": "linux-gcc-x64",
-      "compilerPath": "/usr/bin/gcc",
-      "includePath": [
-        "${workspaceFolder}/**",
-        "~/.arduino15/packages/arduino/tools/avr-gcc/7.3.0-atmel3.6.1-arduino7/avr/include"
-      ],
-      "defines": [],
-      "cStandard": "c11",
-      "cppStandard": "c++20",
-      "intelliSenseMode": "linux-gcc-x64"
-    }
-  ],
-  "version": 4,
-  "enableConfigurationSquiggles": true
+    "env": {
+        "arduino_path": "/home/dennisgunia/.arduino15/packages/arduino",
+        "arduino_avr_include2_path": "${env:arduino_path}/tools/avr-gcc/7.3.0-atmel3.6.1-arduino7/avr/include"
+    },
+    "configurations": [
+        {
+            "name": "linux-gcc-x64",
+            "compilerPath": "/usr/bin/gcc",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/usr/include",
+                "/usr/lib/**",
+                "/usr/include/x86_64-linux-gnu/",
+                "/usr/lib/avr/include"
+            ],
+            "defines": [],
+            "cStandard": "c11",
+            "cppStandard": "c++20",
+            "intelliSenseMode": "linux-gcc-x64"
+        }
+    ],
+    "version": 4,
+    "enableConfigurationSquiggles": true
 }

@@ -5,3 +5,4 @@ software/pc_client/build
 hardware/module_controller/ModuleController-backups/*
 hardware/module_controller/ModuleController-backups
 hardware/module_controller/~*.lck
+software/pc_client/*.json
