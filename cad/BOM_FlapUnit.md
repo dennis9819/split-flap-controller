@@ -78,12 +78,12 @@ Parts per module: 76 (mostly 3d printed)
 ## Electronics
 | part-number | part | amount | notes |
 | ----------- | ---- | ------ | ----- |
-| FU-031      | Backplane PCB | 1 | |
-| FU-032      | PhoenixContact_MSTBA_2,5_2-G-5,08 | 2 | |
-| FU-033      | Phoenix_MSTB:PhoenixContact_MSTBA_2,5_3-G-5,08 | 4 | |
-| FU-034      | L7805 | 1 |  |
-| FU-035      | 74AHCT1G125 | 1 | |
-| FU-036      | 2x08 Edge Connector | 4 |  |
+| FP-031      | Backplane PCB | 1 | |
+| FP-032      | PhoenixContact_MSTBA_2,5_2-G-5,08 | 2 | |
+| FP-033      | Phoenix_MSTB:PhoenixContact_MSTBA_2,5_3-G-5,08 | 4 | |
+| FP-034      | L7805 | 1 |  |
+| FP-035      | 74AHCT1G125 | 1 | |
+| FP-036      | 2x08 Edge Connector | 4 |  |
 - 13 Individual Parts per module
 
 ## Summary:
