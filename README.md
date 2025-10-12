@@ -48,6 +48,7 @@ This project is open source and available under the [AGPL-3.0 License](LICENSE).
 ## Documentation
 - [SFBus Protocol](software/pc_client/doc/sfbus-proto.md)
 - [Websockets Protocol](software/pc_client/doc/api-doc.md)
+- [BOM](cad/BOM_FlapUnit.md)
 
 ---
 ## Credits
