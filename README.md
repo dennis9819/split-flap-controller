@@ -1,73 +1,61 @@
 # 3D Printable split flap display
-This is a 3D printable, expandable split flap display based on the original design of [David Königsmann](https://github.com/davidkingsman/split-flap).
-This version uses his drum and flap design but completly redesigns the electrical system.
-Notable changes:
-* New, more rigid case design.
-* Hot-swappable modules
-* New Backplane
-* New PCB, using mostly smd components and an atmega8 mcu.
-* RS-485 at 19200-Baud, Half-Duplex
-* Custom leightweight protocol
-* Controller, running an WebSockets-Server.
-* Homing-Failure and overcurrent detection
-* Address and calibration data is stored in EEPROM
 
-The firmware as well as the Server is completly rewritten wrfrom scratch in plain c and can easily be ported to other mcu's.
+Welcome to **split-flap-controller**, the firmware + hardware design for driving a modular, scalable split-flap display system.
+
+Development of this project began in 2024 with the goal of creating a robust, DIY split-flap display that anyone can build and customize themselves. Inspired by the iconic Frankfurt Airport display, this project aims to recreate the nostalgic mechanical aesthetic and characteristic flipping sound that made those displays so memorable.
 
 __Ongoing Project! This repository is not final.__
 
-## Websockets Server
-### Satus request of all devices
-Request:
-```
-{"command":"status"}
-```
-Response:
-```
-{
-  "devices_all":2,
-  "devices":[
-    {
-      "id":0,
-      "address":0,
-      "status":{
-        "voltage":11.6015625,
-        "rotations":4,
-        "power":true,
-        "raw":0,
-        "device":"ONLINE",
-        "flags":{
-          "errorTooBig":false,
-          "noHome":false,
-          "fuseBlown":false,
-          "homeSense":false,
-          "powerDown":false,
-          "failSafe":false,
-          "busy":false
-        }
-      }
-    },
-    {
-      "id":1,
-      "address":1,
-      "status":{
-        "voltage":0.0,
-        "rotations":0,
-        "power":true,
-        "raw":0,
-        "device":"OFFLINE",
-        "flags":{
-          "errorTooBig":false,
-          "noHome":false,
-          "fuseBlown":false,
-          "homeSense":false,
-          "powerDown":false,
-          "failSafe":false,
-          "busy":false
-        }
-      }
-    }
-  ],
-  "devices_online":1
-}
-```
+## Project goals
+- **Modularity** – Each flap module is independent and addressable, allowing for scalable display sizes.  
+- **DIY-Friendly Design** – Open schematics, PCBs, and firmware make it accessible for makers and hobbyists.  
+- **Robust Firmware** – Written in C, with features like error handling, EEPROM-stored calibration, and motor homing logic.  
+- **Authentic Aesthetic** – Recreates the distinctive motion and sound of traditional airport-style displays.  
+- **Modern Communication** – Supports RS-485 half-duplex at 57600 baud with WebSocket integration for control from a host system.  
+- **Open for Extension** – Designed to support other MCUs, motor drivers, or mechanical formats.
+
+## Features
+
+### Hardware
+- SMD-based controller board (Atmega8 MCU)  
+- Modular RS-485 communication chain  
+- Integrated motor driver and position sensor handling  
+- Modules connect to a single backplane
+- Hall-effect sensor homing
+
+### Firmware
+- Lightweight communication protocol with checksum and addressing  
+- Fault detection (homing failure, overcurrent, invalid position)  
+- Persistent settings stored in EEPROM  
+
+### Software
+- WebSocket-based control server  
+- Modular architecture for future GUI or API integrations  
+- Easily portable to other platforms and MCUs
+
+## CAD
+This display is designed in **Fusion360**. All schematics and boards are designed in **KiCAD 9**.
+
+Most parts can be 3d printed. The modular backpanel needs to be fabricated from sheetmetal. You can use suppliers like JLCPCB for manufacturing or design a different 3d printable solution.
+
+If you want to generate custom flaps, you can find my flap generator here: [split-flap-generator](https://github.com/dennis9819/split-flap-generator)
+
+## License
+
+This project is open source and available under the [AGPL-3.0 License](LICENSE).
+
+## Documentation
+- [SFBus Protocol](software/pc_client/doc/sfbus-proto.md)
+- [Websockets Protocol](software/pc_client/doc/api-doc.md)
+
+---
+## Credits
+This is a 3D printable, expandable split flap display based on the original design of [David Königsmann](https://github.com/davidkingsman/split-flap).
+This version uses his drum and flap design but completly redesigns the rest of the system.
+
+The firmware as well as the Server is completly rewritten from scratch.
+
+Feel free to checkout his more affordable and diy friendly design.
+
+
+
