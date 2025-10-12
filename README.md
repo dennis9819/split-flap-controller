@@ -1,6 +1,7 @@
 # 3D Printable split flap display
 
 Welcome to **split-flap-controller**, the firmware + hardware design for driving a modular, scalable split-flap display system.
+![Orbit View of Flap Unit](media/FlapUnitOrbit.gif)
 
 Development of this project began in 2024 with the goal of creating a robust, DIY split-flap display that anyone can build and customize themselves. Inspired by the iconic Frankfurt Airport display, this project aims to recreate the nostalgic mechanical aesthetic and characteristic flipping sound that made those displays so memorable.
 
