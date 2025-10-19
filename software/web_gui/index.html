@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <link rel="stylesheet" href="css/pico.min.css">
+    <script type="text/javascript" src="js/sfc.js"></script>
+    <title>Hello world!</title>
+</head>
+
+<body>
+    <dialog id="dialog_change_calibration">
+        <article>
+            <h2>Change calibration</h2>
+            <section>
+                <form id="form_change_calibration">
+                    <label>
+                        New calibration data (default 1400):
+                        <input id="form_change_calibration_data" name="calibration" type="number"
+                            placeholder="Calibration Value" value="1400" />
+                    </label>
+                </form>
+                <footer>
+                    <button class="secondary btn_cancel">
+                        Cancel
+                    </button>
+                    <button class="btn_confirm">Confirm</button>
+                </footer>
+        </article>
+    </dialog>
+
+    <dialog id="change_address">
+        <article>
+            <h2>Change address</h2>
+            <section>
+                <form id="form_change_calibration">
+                    <label>
+                        Current address:
+                        <input id="form_change_address_old" name="addr_old" type="number" placeholder="Current Address"
+                            value="0" />
+                        New address:
+                        <input id="form_change_address_new" name="addr_new" type="number" placeholder="New Address" />
+                    </label>
+                </form>
+                <footer>
+                    <button class="secondary btn_cancel">
+                        Cancel
+                    </button>
+                    <button class="btn_confirm">Confirm</button>
+                </footer>
+        </article>
+    </dialog>
+
+    <dialog id="dialog_add_device">
+        <article>
+            <h2>Add device</h2>
+            <section>
+                <form id="form_change_calibration">
+                    <label>
+                        Device address:
+                        <input id="form_add_device_addr" name="addr_old" type="number" placeholder="Current Address"
+                            value="0" />
+                        Device position:
+                        <fieldset role="group">
+                            <input id="form_add_device_x" name="x" type="x" placeholder="Position X" value="0" />
+                            <input id="form_add_device_y" name="y" type="y" placeholder="Position Y" value="0" />
+                        </fieldset>
+                    </label>
+                </form>
+                <footer>
+                    <button class="secondary btn_cancel">
+                        Cancel
+                    </button>
+                    <button class="btn_confirm">Confirm</button>
+                </footer>
+        </article>
+    </dialog>
+
+    <main class="container">
+        <nav>
+            <ul>
+                <li><strong>SplitFlap</strong></li>
+            </ul>
+            <ul>
+                <li><a onclick="changeView('view_display')" class="secondary">Display</a></li>
+                <li>
+                    <details class="dropdown">
+                        <summary>
+                            Configuration
+                        </summary>
+                        <ul dir="rtl">
+                            <li><a onclick="changeView('view_conf_modules')">Modules</a></li>
+                            <li><a href="#">Layout</a></li>
+                            <li><a onclick="changeView('view_storage')">Storage</a></li>
+                        </ul>
+                    </details>
+                </li>
+            </ul>
+        </nav>
+        <div id="view_display"><!-- Main View : print -->
+            <h1>Display Something!</h1>
+            <form id="form_display">
+                <fieldset>
+                    <label>
+                        Text to display:
+                        <input id="form_display_str" name="text" placeholder="Text" />
+                    </label>
+                    <label>
+                        Position on display:
+                        <fieldset role="group">
+                            <input id="form_display_x" name="x" type="x" placeholder="Position X" value="0" />
+                            <input id="form_display_y" name="y" type="y" placeholder="Position Y" value="0" />
+                        </fieldset>
+                    </label>
+                </fieldset>
+
+                <input type="button" onClick="btn_display()" value="Display" />
+                <input type="button" onClick="btn_clear()" value="Clear screen" />
+            </form>
+        </div>
+        <div id="view_conf_modules" style="display: none;">
+            <h1>Module config</h1>
+            <div role="group">
+                <button id="btn_refresh" onClick="load_module_conf()">Refresh</button>
+
+            </div>
+
+            <template id="module_list_template">
+                <details name="example" open>
+                    <summary class="module_header"></summary>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th scope="col">Property</th>
+                                <th scope="col">Value</th>
+                                <th scope="col"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <th scope="row">Module ID</th>
+                                <td>12,104</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Address</th>
+                                <td>4,880</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Calibration</th>
+                                <td>12,104</td>
+                                <td><button>Set</button></td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Status</th>
+                                <td>12,104</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Rotations</th>
+                                <td>12,104</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Position</th>
+                                <td>12,104</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Motor On</th>
+                                <td>12,104</td>
+                                <td><input name="power" type="checkbox" role="switch" /></td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Voltage</th>
+                                <td>12,104</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Current flap</th>
+                                <td>12,104</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Error flags</th>
+                                <td>-</td>
+                                <td></td>
+                            </tr>
+
+                        </tbody>
+
+                    </table>
+                    <div role="group">
+                        <button class="btn_reset">Reset</button>
+                        <button class="btn_remove secondary pico-background-red-500">Remove</button>
+                    </div>
+                </details>
+                <hr />
+            </template>
+
+            <div id="module_list"></div>
+            <div role="group">
+                <button class="btn_add" onclick="display_dialog_add_device()">Add Module</button>
+                <button class="btn_assign" onclick="display_dialog_change_address()">Assign Address</button>
+            </div>
+        </div>
+        <div id="view_storage" style="display: none;"><!-- Main View : print -->
+            <h1>Load/Save Config!</h1>
+             <div role="group">
+                <button class="btn_load" onclick="btn_load()">Load Config</button>
+            </div>
+             <div role="group">
+                <button class="btn_save" onclick="btn_save()">Safe Config</button>
+            </div>
+        </div>
+
+
+    </main>
+</body>
+
+</html>

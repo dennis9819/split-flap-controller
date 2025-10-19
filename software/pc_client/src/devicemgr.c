@@ -90,6 +90,7 @@ int devicemgr_readStatus(int device_id)
         u_int32_t _counter = 0;
         u_int8_t _status =
             sfbus_read_status(devices[device_id].rs485_descriptor, devices[device_id].address, &_voltage, &_counter);
+
         if (_status == 0xFF)
         {
             devices[device_id].powerState = UNKNOWN;
@@ -252,16 +253,16 @@ void setSingle(int id, char flap)
         {
             printf("match char %i %i %i\n", test_char, *symbols[ix], ix);
             sfbus_display_full(devices[id].rs485_descriptor, devices[id].address, ix);
+            devices[id].current_flap = ix;
             break;
         }
     }
-    devices[nextFreeSlot].current_flap = flap;
 }
 
 void setSingleRaw(int id, int flap)
 {
     sfbus_display_full(devices[id].rs485_descriptor, devices[id].address, flap);
-    devices[nextFreeSlot].current_flap = flap;
+    devices[id].current_flap = flap;
 }
 
 void devicemgr_printText(const char *text, int x, int y)
@@ -284,6 +285,21 @@ void devicemgr_printFlap(int flap, int x, int y)
     if (this_id >= 0)
     {
         setSingleRaw(this_id, flap);
+    }
+}
+
+// clears complete screen
+void devicemgr_clearscreen()
+{
+    for (int ix = 0; ix < SFDEVICE_MAXDEV; ix++)
+    {
+        if (devices[ix].address > 0)
+        {
+            if (devices[ix].current_flap != 0)
+            {
+                setSingleRaw(ix, 0);
+            }
+        }
     }
 }
 
@@ -384,7 +400,7 @@ int devicemgr_load(char *file)
 
     do
     {
-        char* read_ret = fgets(line_in_file, JSON_MAX_LINE_LEN, fptr); // read line from file
+        char *read_ret = fgets(line_in_file, JSON_MAX_LINE_LEN, fptr); // read line from file
         stringlen = strlen(line_in_file);
         // printf("Read line with chars: %i : %s", stringlen, line_in_file); // only for testing
         jobj = json_tokener_parse_ex(tok, line_in_file, stringlen);

@@ -36,3 +36,4 @@ void devicemgr_printFlap(int flap, int x, int y);
 int devicemgr_load(char *file);
 int devicemgr_load_single(json_object *device_obj);
 int devicemgr_remove(int id);
+void devicemgr_clearscreen();

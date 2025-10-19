@@ -171,6 +171,14 @@ void cmd_dm_print_single(json_object *req, json_object *res)
     }
 }
 
+// clear display
+void cmd_dm_clear(json_object *req, json_object *res)
+{
+    devicemgr_clearscreen();
+    json_object_object_add(res, "ack", json_object_new_boolean(true));
+    
+}
+
 
 // ping device
 void cmd_dr_ping(json_object *req, json_object *res)
@@ -373,6 +381,11 @@ json_object *parse_command(json_object *req)
     else if (strcmp(command, "dm_print") == 0)
     {
         cmd_dm_print(req, res);
+        return res;
+    }
+    else if (strcmp(command, "dm_clear") == 0)
+    {
+        cmd_dm_clear(req, res);
         return res;
     }
     else if (strcmp(command, "dr_ping") == 0)
