@@ -61,9 +61,9 @@ int rs485_recv_c_rxout(uint8_t timeout, char *data)
 
 // SFBUS Functions
 // receive paket with crc checking and timeout
-uint8_t sfbus_recv_frame_v2(uint16_t address, char *payload)
+int sfbus_recv_frame_v2(uint16_t address, char *payload)
 {
-    const uint8_t RX_TIMEOUT = 2;
+    const uint8_t RX_TIMEOUT = 4;
     while (rs485_recv_c() != SFBUS_SOF_BYTE)
     {
     } // Wait for start byte
@@ -97,7 +97,7 @@ uint8_t sfbus_recv_frame_v2(uint16_t address, char *payload)
     return (checksum == checksum_calc && address == recv_addr) ? frm_length : 0;
 }
 
-// send paket with crc 
+// send paket with crc
 void sfbus_send_frame_v2(uint16_t address, char *payload, uint8_t length)
 {
     uint8_t framelen = length;
@@ -146,4 +146,99 @@ uint16_t calc_CRC16(char *buffer, uint8_t len)
         }
     }
     return crc16;
+}
+
+// async receive function
+uint8_t rx_buffer_ix_ptr = 0;   // receive buffer index pointer
+uint8_t rx_buffer_ix_rem = 255; // receive buffer remaining
+uint8_t rx_buffer_rx_done = 0;  // receive buffer complete flag (must be reset before next pkg can be received)
+uint8_t *rx_buffer_temp;        // receive buffer
+
+// setup async receive function
+void setup_async_rx()
+{
+    rx_buffer_temp = malloc(PROTO_MAXPKGLEN); // reserve memory for rx buffer
+    UCSRB |= (1 << RXCIE);                    //enable rx interrupt
+}
+
+ISR(USART_RXC_vect)
+{
+    if (rx_buffer_rx_done == 0) // only receive when last buffer was processed
+    {
+        uint8_t rx_byte = UDR; // read rx buffer
+        if (timer_ticks > 6)   // too long since last byte
+        {
+            rx_buffer_ix_ptr = 0;   // reset pointer and start new transaction
+            rx_buffer_ix_rem = 255; // reset remaining bytes to default
+        }
+        if (rx_buffer_ix_ptr == 0)
+        {
+            // wait for startbyte
+            if (rx_byte == SFBUS_SOF_BYTE)
+            {
+                *(rx_buffer_temp) = rx_byte;
+                rx_buffer_ix_ptr++;
+            }
+        }
+        else if (rx_buffer_ix_ptr > 0 && rx_buffer_ix_ptr < (PROTO_MAXPKGLEN - 1)) // when package is already started
+        {                                                   // and buffer is smaller than max length
+            *(rx_buffer_temp + rx_buffer_ix_ptr) = rx_byte; // receive single byte
+            rx_buffer_ix_rem--;
+            rx_buffer_ix_ptr++;
+            if (rx_buffer_ix_ptr == 3) // third byte is always frame length
+            {
+                rx_buffer_ix_rem = rx_byte;
+            }
+            if (rx_buffer_ix_rem == 0) // when last byte is received
+            {
+                rx_buffer_ix_ptr--;
+                rx_buffer_rx_done = 1;
+            }
+        }
+        timer_ticks = 0; // reset timer ticks
+    }
+}
+
+int parse_buffer(uint16_t address, char *payload)
+{
+    if (rx_buffer_rx_done > 0)
+    {
+        uint8_t frm_length = *(rx_buffer_temp + 2);
+        // check protocol version
+        if (*(rx_buffer_temp + 1) != 0x01)
+        {
+            clear_buffer();
+            return -1; // abort on incompatible version
+        }
+        if (frm_length < PROTO_MAXPKGLEN) // prevent buffer overflow
+        {
+            memcpy(payload, rx_buffer_temp + 3, frm_length); // copy buffer
+            // if version matches, read address and checksum
+            uint16_t recv_addr = (*(rx_buffer_temp + 3) & 0xFF) | ((*(rx_buffer_temp + 4) & 0xFF) << SHIFT_1B);
+            uint16_t checksum = (*(rx_buffer_temp + (rx_buffer_ix_ptr - 1)) & 0xFF) |
+                                ((*(rx_buffer_temp + (rx_buffer_ix_ptr)) & 0xFF) << SHIFT_1B);
+            // calculate checksum of received payload
+            uint16_t checksum_calc = calc_CRC16((char *)rx_buffer_temp + 5, rx_buffer_ix_ptr - 6);
+
+            //mctrl_set(address == recv_addr ? 20 : recv_addr + 1, 0);
+            clear_buffer();
+            // return length on valid address and crc, return 0 to ignore
+            return (checksum == checksum_calc && address == recv_addr) ? frm_length : 0;
+        }
+        else
+        {
+            // invalid package
+            clear_buffer();
+            return -1;
+        }
+    }
+    return -2;
+}
+
+void clear_buffer()
+{
+    rx_buffer_ix_ptr = 0;               // reset pointer and start new transaction
+    rx_buffer_ix_rem = PROTO_MAXPKGLEN; // reset remaining bytes to default
+    rx_buffer_rx_done = 0;              // reset done flag
+    //memset(rx_buffer_temp, 0x00, PROTO_MAXPKGLEN); // clear buffer
 }

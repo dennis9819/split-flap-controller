@@ -26,10 +26,13 @@ extern "C"
     char rs485_recv_c(void);
     int rs485_recv_c_rxout(uint8_t timeout, char *data);
 
-    uint8_t sfbus_recv_frame_v2(uint16_t address, char *payload);
+    int sfbus_recv_frame_v2(uint16_t address, char *payload);
     void sfbus_send_frame_v2(uint16_t address, char *payload, uint8_t length);
     uint16_t calc_CRC16(char *buffer, uint8_t len);
 
+    void setup_async_rx();
+    int parse_buffer(uint16_t address, char *payload);
+    void clear_buffer();
     // auxilary var for uart timeout
     extern uint16_t timer_ticks;
 

@@ -148,7 +148,7 @@ int sfbus_ping(int fd, u_int16_t address)
     char *buffer = malloc(64); // allocate rx buffer
     sfbus_send_frame_v2(fd, address, strlen(cmd), cmd);
     int len = sfbus_recv_frame_wait(fd, 0xFFFF, buffer);
-    if (len == 4 && *buffer == (char)0xFF) // expect 0xFF on successful ping
+    if (len == 5 && *buffer == (char)0xFF) // expect 0xFF on successful ping
     {
         printf("Ping okay!\n");
         free(buffer);
@@ -235,7 +235,8 @@ u_int8_t sfbus_read_status(int fd, u_int16_t address, double *voltage, u_int32_t
     char *cmd = "\xF8";
     char *_buffer = malloc(256);
     sfbus_send_frame_v2(fd, address, strlen(cmd), cmd);
-    int res = sfbus_recv_frame_wait(fd, 0xFFFF, _buffer);
+
+    int res = sfbus_recv_frame_wait(fd, 0xFFFF, _buffer);   
     if (res < 0)
     {
         return 0xFF;
@@ -248,7 +249,9 @@ u_int8_t sfbus_read_status(int fd, u_int16_t address, double *voltage, u_int32_t
 
     *voltage = __voltage;
     *counter = (u_int32_t)_counter;
-    return *_buffer;
+
+    free(_buffer);
+    return 0x00;
 }
 
 void sfbus_reset_device(int fd, u_int16_t address)

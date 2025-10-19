@@ -13,6 +13,8 @@
 
 uint16_t address = 0x0000;
 uint16_t calib_offset = 0x0000;
+char *payload;
+
 
 void eeprom_write_c(uint16_t address, uint8_t data)
 {
@@ -60,11 +62,10 @@ void initialSetup()
 
 void readCommand()
 {
-    char *payload = malloc(PROTO_MAXPKGLEN);
-    uint8_t payload_len = sfbus_recv_frame_v2(address, payload);
-    payload += 2; // skip address bytes
-    if (payload_len > 0)
+    int payload_len = parse_buffer(address, payload);
+    if (payload_len > 0) // if positive, package is valid
     {
+        payload += 2; // skip address bytes
         // read command byte
         uint8_t opcode = *payload;
         // parse commands
@@ -166,14 +167,16 @@ void readCommand()
             _delay_ms(2);
             sfbus_send_frame_v2(0xFFFF, &msg, 1);
         }
+        //memset(payload, 0x00, PROTO_MAXPKGLEN); // clear buffer
     }
-    free(payload);
 }
 
 int main()
 {
+    payload = malloc(PROTO_MAXPKGLEN);
     initialSetup();
     rs485_init();
+    setup_async_rx();
     mctrl_init(calib_offset);
 
     while (1 == 1)
