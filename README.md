@@ -50,6 +50,10 @@ This project is open source and available under the [AGPL-3.0 License](LICENSE).
 - [Websockets Protocol](software/pc_client/doc/api-doc.md)
 - [BOM](cad/BOM_FlapUnit.md)
 
+## Power Consumption
+Each Module pulls arround 110mA. This is roughly 1.4W of power. 
+This can be reduced by turning off the motors in idle. 
+
 ---
 ## Credits
 This is a 3D printable, expandable split flap display based on the original design of [David Königsmann](https://github.com/davidkingsman/split-flap).
