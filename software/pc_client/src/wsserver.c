@@ -8,7 +8,7 @@
  */
 
 #include "wsserver.h"
-
+#include "logging/logger.h"
 /*
  * This section provides a web server to controll the
  * device manager through web sockets
@@ -22,7 +22,7 @@ void ws_opencon(ws_cli_conn_t client)
 {
     char *cli;
     cli = ws_getaddress(client);
-    printf("Connection opened, addr: %s\n", cli);
+    log_message(LOG_DEBUG, "WebSocket connection opened, addr: %s", cli);
 }
 
 // called on closing websocket client
@@ -30,14 +30,14 @@ void ws_closecon(ws_cli_conn_t client)
 {
     char *cli;
     cli = ws_getaddress(client);
-    printf("Connection closed, addr: %s\n", cli);
+    log_message(LOG_DEBUG, "WebSocket connection closed, addr: %s", cli);
 }
 
 // called on receiving websocket message
 void ws_messagehandler(ws_cli_conn_t client, const unsigned char *msg, uint64_t size, int type)
 {
     char *cli = ws_getaddress(client);
-    printf("received message: %s (%zu), from: %s\n", msg, size, cli);
+    log_message(LOG_DEBUG, "WebSocket received message: %s (%zu), from: %s", msg, size, cli);
 
     json_tokener *tok = json_tokener_new();
     json_object *req = json_tokener_parse_ex(tok, msg, size);
@@ -46,13 +46,12 @@ void ws_messagehandler(ws_cli_conn_t client, const unsigned char *msg, uint64_t 
     if (jerr != json_tokener_success)
     {
         // check if request can be parsed, if not retrun error
-        send_json_error(client, "parsing error", json_tokener_error_desc(jerr));
+        send_json_error(client, "WebSocket JSON parsing error", json_tokener_error_desc(jerr));
     }
     else
     {
         // if it can be parsed, get command.
         json_object *commandObj = json_object_object_get(req, "command");
-        printf("test");
         if (commandObj != NULL)
         {
             const char *command = json_object_to_json_string(commandObj);
@@ -95,6 +94,8 @@ void send_json_error(ws_cli_conn_t client, char *error, const char *detail)
 int start_webserver(json_object *(*commandparser_func_ptr)(json_object *))
 {
     commandparser_func = commandparser_func_ptr;
+    log_message(LOG_INFO, "Websocket server started at ws://%s:%d", WS_SERVER_ADDR, WS_SERVER_PORT);
+
     ws_socket(&(struct ws_server){/*
          * Bind host, such as:
          * localhost -> localhost/127.0.0.1

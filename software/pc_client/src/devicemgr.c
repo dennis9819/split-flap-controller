@@ -10,6 +10,7 @@
  */
 
 #include "devicemgr.h"
+#include "logging/logger.h"
 #include <json-c/json_object.h>
 #include <string.h>
 #include <sys/types.h>
@@ -127,7 +128,7 @@ int devicemgr_readCalib(int device_id)
         }
         else
         {
-            printf("Error reading eeprom from %i\n", device_id);
+            log_message(LOG_ERROR, "Error reading eeprom from %i", device_id);
             free(buffer_r);
             return -1;
         }
@@ -246,12 +247,12 @@ void setSingle(int id, char flap)
 {
     // first convert char to flap id
     char test_char = toupper(flap);
-    printf("find char %c\n", test_char);
+    // printf("find char %c\n", test_char);
     for (int ix = 0; ix < 45; ix++)
     {
         if (*symbols[ix] == test_char)
         {
-            printf("match char %i %i %i\n", test_char, *symbols[ix], ix);
+            // printf("match char %i %i %i\n", test_char, *symbols[ix], ix);
             sfbus_display_full(devices[id].rs485_descriptor, devices[id].address, ix);
             devices[id].current_flap = ix;
             break;
@@ -272,7 +273,7 @@ void devicemgr_printText(const char *text, int x, int y)
         int this_id = deviceMap[x + i][y];
         if (this_id >= 0)
         {
-            printf("print char %c to %i\n", *(text + i), devices[this_id].address);
+            log_message(LOG_DEBUG, "print char '%c' to id:%i", *(text + i), devices[this_id].address);
 
             setSingle(this_id, *(text + i));
         }
@@ -310,6 +311,7 @@ int devicemgr_register(int rs485_descriptor, u_int16_t address, int x, int y, in
         nextFreeSlot++;
         nid = nextFreeSlot;
     }
+    log_message(LOG_INFO, "Register new device with addr %i at (%i,%i) with id %i", address, x, y, nid);
 
     devices[nid].pos_x = x;
     devices[nid].pos_y = y;
@@ -380,7 +382,7 @@ int devicemgr_save(char *file)
     json_object_object_add(root, "devices", device_array);
 
     const char *data = json_object_to_json_string_ext(root, JSON_C_TO_STRING_PRETTY);
-    printf("[INFO][console] store data to %s\n", file);
+    log_message(LOG_INFO, "store config data to %s\n", file);
 
     FILE *fptr;
     fptr = fopen(file, "w");
@@ -392,6 +394,9 @@ int devicemgr_load(char *file)
 {
     FILE *fptr;
     char *line_in_file = malloc(JSON_MAX_LINE_LEN); // maximum of 256 bytes per line;
+
+    log_message(LOG_INFO, "load config data from %s\n", file);
+
     fptr = fopen(file, "r");
     json_tokener *tok = json_tokener_new();
     json_object *jobj = NULL;
@@ -412,7 +417,7 @@ int devicemgr_load(char *file)
     if (jerr != json_tokener_success)
     {
         free(fptr); //free file pointer
-        fprintf(stderr, "Error: %s\n", json_tokener_error_desc(jerr));
+        log_message(LOG_ERROR, "%s", json_tokener_error_desc(jerr));
         // Handle errors, as appropriate for your application.
         return -1;
     }
@@ -429,7 +434,7 @@ int devicemgr_load(char *file)
     json_object *next_free;
     if (!json_object_object_get_ex(jobj, "nextFreeSlot", &next_free))
     {
-        fprintf(stderr, "Error: %s\n", "Key 'nextFreeSlot' not found.");
+        log_message(LOG_ERROR, "%s", "Key 'nextFreeSlot' not found.");
         return -1;
     }
     else
@@ -445,7 +450,7 @@ int devicemgr_load(char *file)
     json_object *devices;
     if (!json_object_object_get_ex(jobj, "devices", &devices))
     {
-        fprintf(stderr, "Error: %s\n", "Key 'devices' not found.");
+        log_message(LOG_ERROR, "%s", "Key 'devices' not found.");
         return -1;
     }
     else
@@ -470,22 +475,22 @@ int devicemgr_load_single(json_object *device_obj)
     // verify values are present
     if (jid == NULL)
     {
-        fprintf(stderr, "Error: Key 'device.%s' not found\n", "id");
+        log_message(LOG_ERROR, "Key 'device.%s' not found", "id");
         return -1;
     }
     if (jaddr == NULL)
     {
-        fprintf(stderr, "Error: Key 'address.%s' not found\n", "id");
+        log_message(LOG_ERROR, "Error: Key 'address.%s' not found", "id");
         return -1;
     }
     if (jposx == NULL)
     {
-        fprintf(stderr, "Error: Key 'device.%s' not found\n", "position.x");
+        log_message(LOG_ERROR, "Error: Key 'device.%s' not found", "position.x");
         return -1;
     }
     if (jposy == NULL)
     {
-        fprintf(stderr, "Error: Key 'device.%s' not found\n", "position.y");
+        log_message(LOG_ERROR, "Error: Key 'device.%s' not found", "position.y");
         return -1;
     }
 

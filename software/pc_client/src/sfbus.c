@@ -8,9 +8,11 @@
  */
 
 #include "sfbus.h"
+#include "logging/logger.h"
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
+
 
 void print_charHex(char *buffer, int length)
 {
@@ -25,16 +27,22 @@ void print_charHex(char *buffer, int length)
 
 void print_bufferHexRx(char *buffer, int length, u_int16_t address)
 {
-    printf("Rx (0x%04X): ", address);
-    print_charHex(buffer, length);
-    printf("| %i bytes received\n", length);
+    if (log_message_header(LOG_TRACE) > 0)
+    {
+        printf("Rx (0x%04X): ", address);
+        print_charHex(buffer, length);
+        printf("| %i bytes received\n", length);
+    }
 }
 
 void print_bufferHexTx(char *buffer, int length, u_int16_t address)
 {
-    printf("Tx (0x%04X): ", address);
-    print_charHex(buffer, length);
-    printf("| %i bytes sent\n", length);
+    if (log_message_header(LOG_TRACE) > 0)
+    {
+        printf("Tx (0x%04X): ", address);
+        print_charHex(buffer, length);
+        printf("| %i bytes sent\n", length);
+    }
 }
 
 ssize_t sfbus_recv_frame_wait(int fd, u_int16_t address, char *buffer)
@@ -47,7 +55,7 @@ ssize_t sfbus_recv_frame_wait(int fd, u_int16_t address, char *buffer)
         retryCount--;
         if (retryCount == 0)
         {
-            fprintf(stderr, "Rx timeout\n");
+            log_message(LOG_WARNING, "RX timeout waiting for data at 0x%04X", address);
             return -1;
         }
     } while (len <= 0);
@@ -99,13 +107,16 @@ ssize_t sfbus_recv_frame_v2(int fd, u_int16_t address, char *buffer)
 
     if (frm_crc == calc_crc)
     {
-        printf("crc check okay! expected: %04X received: %04X\n", calc_crc, frm_crc);
+        log_message(LOG_DEBUG, "crc check okay! expected: %04X received: %04X", calc_crc, frm_crc);
         return frm_length;
     }
     else
     {
-        print_bufferHexRx(buffer, frm_length - 4, address);
-        printf("crc check failed! expected: %04X received: %04X\n", calc_crc, frm_crc);
+        if (log_message_header(LOG_TRACE) > 0)
+        {
+            print_bufferHexRx(buffer, frm_length - 4, address);
+        }
+        log_message(LOG_DEBUG,"crc check failed! expected: %04X received: %04X", calc_crc, frm_crc);
 
         return -1;
     }
@@ -150,13 +161,13 @@ int sfbus_ping(int fd, u_int16_t address)
     int len = sfbus_recv_frame_wait(fd, 0xFFFF, buffer);
     if (len == 5 && *buffer == (char)0xFF) // expect 0xFF on successful ping
     {
-        printf("Ping okay!\n");
+        log_message(LOG_DEBUG, "Ping to 0x%04X okay!", address);
         free(buffer);
         return 0;
     }
     else
     {
-        printf("Ping invalid response!\n");
+        log_message(LOG_WARNING, "Ping to 0x%04X failed! Invalid or no response.", address);
         free(buffer);
         return 1;
     }
@@ -170,12 +181,12 @@ int sfbus_read_eeprom(int fd, u_int16_t address, char *buffer)
     int len = sfbus_recv_frame_wait(fd, 0xFFFF, _buffer);
     if (len != 10)
     {
-        printf("Invalid data!\n");
+        log_message(LOG_WARNING, "Invalid data received from 0x%04X! Unexpected package length.", address);
         return -1;
     }
     if (*(_buffer + 5) != (char)0xAA || *(_buffer) != (char)0xAA)
     {
-        printf("Invalid data!\n");
+        log_message(LOG_WARNING, "Invalid data received from 0x%04X! No ACK byte received.", address);
         return -1;
     }
     memcpy(buffer, _buffer + 1, len - 4);
@@ -196,12 +207,12 @@ int sfbus_write_eeprom(int fd, u_int16_t address, char *wbuffer, char *rbuffer)
     int len = sfbus_recv_frame_wait(fd, 0xFFFF, _buffer);
     if (len != 10)
     {
-        printf("Invalid data!\n");
+        log_message(LOG_WARNING, "Invalid data received from 0x%04X! Unexpected package length.", address);
         return -1;
     }
     if (*(_buffer + 5) != (char)0xAA || *(_buffer) != (char)0xAA)
     {
-        printf("Invalid data!\n");
+        log_message(LOG_WARNING, "Invalid data received from 0x%04X! No ACK byte received.", address);
         return -1;
     }
     memcpy(rbuffer, _buffer + 1, len - 4);
@@ -236,7 +247,7 @@ u_int8_t sfbus_read_status(int fd, u_int16_t address, double *voltage, u_int32_t
     char *_buffer = malloc(256);
     sfbus_send_frame_v2(fd, address, strlen(cmd), cmd);
 
-    int res = sfbus_recv_frame_wait(fd, 0xFFFF, _buffer);   
+    int res = sfbus_recv_frame_wait(fd, 0xFFFF, _buffer);
     if (res < 0)
     {
         return 0xFF;

@@ -19,6 +19,7 @@
 #include "console.h"
 #include "devicemgr.h"
 #include "ftdi485.h"
+#include "logging/logger.h"
 #include "sfbus.h"
 
 extern char *optarg;
@@ -31,6 +32,9 @@ void printUsage(char *argv[])
 
 int main(int argc, char *argv[])
 {
+    init_logger(LOG_TRACE);
+    log_message(LOG_INFO, "Starting split-flap pc client %s", "v1.0.0");
+    log_message(LOG_INFO, "(c) 2024-2025 GuniaLabs (www.dennisgunia.de)");
     int opt = ' ';
     u_int16_t addr_int = 0;
     char *port = malloc(256);
@@ -62,13 +66,13 @@ int main(int argc, char *argv[])
     }
     if (access(port, F_OK) != 0)
     {
-        fprintf(stderr, "Filedescriptor: %s does not exist or cannot be opened\n", port);
+        log_message(LOG_CRITICAL, "Filedescriptor: %s does not exist or cannot be opened\n", port);
         printUsage(argv);
     }
     // parse address
     if (strlen(addr) == 0)
     {
-        fprintf(stderr, "Please specify address\n");
+        log_message(LOG_CRITICAL, "Please specify address\n");
         printUsage(argv);
     }
     else
@@ -79,7 +83,7 @@ int main(int argc, char *argv[])
     // start program
     setvbuf(stdout, NULL, _IONBF, 0); // do not buffer stdout!!!!
 
-    printf("Open device at %s\n", port);
+    log_message(LOG_INFO,"Open device at %s @ 57600 Baud", port);
     int fd = rs485_init(port, B57600); // setup rs485
 
     if (strcmp(command, "ping") == 0)

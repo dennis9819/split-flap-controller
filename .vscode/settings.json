@@ -87,7 +87,10 @@
     "functional": "c",
     "variant": "c",
     "*.def": "c",
-    "unistd.h": "c"
+    "unistd.h": "c",
+    "string.h": "c",
+    "ftdi485.h": "c",
+    "logger.h": "c"
   },
   "C_Cpp.errorSquiggles": "enabled"
 }

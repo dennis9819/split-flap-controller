@@ -60,8 +60,6 @@ void cmd_dm_register(json_object *req, json_object *res)
         x = json_object_get_int(jx);
         y = json_object_get_int(jy);
 
-        printf("[INFO][console] register new device wit addr %i at (%i,%i)", address, x, y);
-
         int newId = devicemgr_register(fd, address, x, y, -1);
         json_object_object_add(res, "id", json_object_new_int(newId));
     }
