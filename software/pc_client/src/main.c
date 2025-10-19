@@ -32,19 +32,17 @@ void printUsage(char *argv[])
 
 int main(int argc, char *argv[])
 {
+
+    // initialize logger
     init_logger(LOG_TRACE);
     log_message(LOG_INFO, "Starting split-flap pc client %s", "v1.0.0");
     log_message(LOG_INFO, "(c) 2024-2025 GuniaLabs (www.dennisgunia.de)");
+
+    // parse arguments
     int opt = ' ';
-    u_int16_t addr_int = 0;
-    char *port = malloc(256);
-    char *command = malloc(16);
-    char *addr = malloc(16);
-    char *data = malloc(256);
-    command = "";
-    addr = "";
-    data = "";
-    while ((opt = getopt(argc, argv, "p:c:a:d:")) != -1)
+    char *port, *config_file, *log_level;
+
+    while ((opt = getopt(argc, argv, "p:c:l:")) != -1) // check options
     {
         switch (opt)
         {
@@ -52,128 +50,78 @@ int main(int argc, char *argv[])
             port = optarg;
             break;
         case 'c':
-            command = optarg;
+            config_file = optarg;
             break;
-        case 'a':
-            addr = optarg;
-            break;
-        case 'd':
-            data = optarg;
+        case 'l':
+            log_level = optarg;
             break;
         default:
             printUsage(argv);
         }
     }
-    if (access(port, F_OK) != 0)
+
+
+    if (log_level != NULL) // if log level specified
     {
-        log_message(LOG_CRITICAL, "Filedescriptor: %s does not exist or cannot be opened\n", port);
-        printUsage(argv);
+        if (strlen(log_level) > 0)
+        {                                              // if log level specified
+            long inputLogLevel = strtol("", NULL, 10); // parse log level
+            init_logger(inputLogLevel);                // re-init logger with new level
+        }
     }
-    // parse address
-    if (strlen(addr) == 0)
+
+    if (config_file == NULL) // if config file not specified
     {
-        log_message(LOG_CRITICAL, "Please specify address\n");
+        log_message(LOG_CRITICAL, "Please specify config file\n");
         printUsage(argv);
     }
     else
     {
-        addr_int = strtol(addr, NULL, 10);
+        if (strlen(config_file) == 0) // if config file path empty
+        {
+            log_message(LOG_CRITICAL, "Please specify config file\n");
+        }
+        else
+        {
+            if (access(config_file, F_OK) != 0) // check if config file exists and can be opened
+            {
+                log_message(LOG_CRITICAL, "Config file: %s does not exist or cannot be opened\n", config_file);
+                printUsage(argv);
+            }
+            else
+            {
+                log_message(LOG_INFO, "Use device configuration at '%s'", config_file);
+            }
+        }
     }
 
-    // start program
-    setvbuf(stdout, NULL, _IONBF, 0); // do not buffer stdout!!!!
+    if (port == NULL) // if port not specified
+    {
+        log_message(LOG_CRITICAL, "Please specify serial port\n");
+        printUsage(argv);
+    }
+    else
+    {
+        if (strlen(port) == 0) // if port path empty
+        {
+            log_message(LOG_CRITICAL, "Please specify serial port\n");
+            printUsage(argv);
+        }
+        else
+        {
+            if (access(port, F_OK) != 0) // check if port exists and can be opened
+            {
+                log_message(LOG_CRITICAL, "Serial port: %s does not exist or cannot be opened\n", port);
+                printUsage(argv);
+            }
+            else
+            {
+                log_message(LOG_INFO, "Use serial port at '%s'", port);
+            }
+        }
+    }
 
-    log_message(LOG_INFO,"Open device at %s @ 57600 Baud", port);
     int fd = rs485_init(port, B57600); // setup rs485
-
-    if (strcmp(command, "ping") == 0)
-    {
-        sfbus_ping(fd, addr_int);
-    }
-    else if (strcmp(command, "printf") == 0)
-    {
-        devicemgr_printText(data, 0, 0);
-    }
-    else if (strcmp(command, "r_eeprom") == 0)
-    {
-        char *buffer = malloc(64);
-        sfbus_read_eeprom(fd, addr_int, buffer);
-        printf("Read data: 0x");
-        print_charHex(buffer, 5);
-        printf("\n");
-        free(buffer);
-        exit(0);
-    }
-    else if (strcmp(command, "w_addr") == 0)
-    {
-        int n_addr = strtol(data, NULL, 10);
-        int ret = sfbusu_write_address(fd, addr_int, n_addr);
-        exit(ret);
-    }
-    else if (strcmp(command, "w_cal") == 0)
-    {
-        int n_addr = strtol(data, NULL, 10);
-        int ret = sfbusu_write_calibration(fd, addr_int, n_addr);
-        exit(ret);
-    }
-    else if (strcmp(command, "status") == 0)
-    {
-        double voltage = 0;
-        u_int32_t counter = 0;
-        u_int8_t status = sfbus_read_status(fd, addr_int, &voltage, &counter);
-        printf("=======================\n");
-        printf("Status register flags :\n");
-        printf(" 00 -> errorTooBig : %i\n", (status >> 0) & 0x01);
-        printf(" 01 -> noHome      : %i\n", (status >> 1) & 0x01);
-        printf(" 02 -> fuseBlown   : %i\n", (status >> 2) & 0x01);
-        printf(" 03 -> homeSense   : %i\n", (status >> 3) & 0x01);
-        printf(" 04 -> powerDown   : %i\n", (status >> 4) & 0x01);
-        printf(" 05 -> failSafe    : %i\n", (status >> 5) & 0x01);
-        printf(" 06 -> busy        : %i\n", (status >> 6) & 0x01);
-        printf("Driver-Voltage    : %.2fV\n", voltage);
-        printf("Rotations         : %i\n", counter);
-
-        exit(0);
-    }
-    else if (strcmp(command, "display") == 0)
-    {
-        int flap = strtol(data, NULL, 10);
-        // read current eeprom status
-        char *buffer_w = malloc(4);
-        sfbus_display(fd, addr_int, flap);
-        exit(0);
-    }
-    else if (strcmp(command, "display_fr") == 0)
-    {
-        int flap = strtol(data, NULL, 10);
-        // read current eeprom status
-        char *buffer_w = malloc(4);
-        sfbus_display_full(fd, addr_int, flap);
-        exit(0);
-    }
-    else if (strcmp(command, "reset") == 0)
-    {
-        sfbus_reset_device(fd, addr_int);
-        exit(0);
-    }
-    else if (strcmp(command, "power_on") == 0)
-    {
-        sfbus_motor_power(fd, addr_int, 1);
-        exit(0);
-    }
-    else if (strcmp(command, "power_off") == 0)
-    {
-        sfbus_motor_power(fd, addr_int, 0);
-        exit(0);
-    }
-    else if (strcmp(command, "server") == 0)
-    {
-        start_console(fd);
-    }
-    else
-    {
-        fprintf(stderr, "Invalid command specified!\n");
-        printUsage(argv);
-    }
+    start_console(fd, config_file);    // start console
     return 0;
 }

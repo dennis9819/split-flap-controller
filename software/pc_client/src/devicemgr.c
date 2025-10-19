@@ -17,57 +17,64 @@
 
 enum SFDEVICE_STATE
 {
-    UNALLOCATED,
-    NEW,
-    OFFLINE,
-    ONLINE,
-    FAILED,
-    REMOVED
+    UNALLOCATED, // device slot not allocated
+    NEW,         // device slot allocated, but is not yet refreshed
+    OFFLINE,     // device is allocated, but not reachable
+    ONLINE,      // device is online and reachable
+    FAILED,      // device is online, but in fail-safe mode
+    REMOVED      // device has been removed and can be reallocated
 };
 enum SFDEVICE_POWER
 {
-    DISABLED,
-    ENABLED,
-    UNKNOWN
+    DISABLED, // motor power disabled
+    ENABLED,  // motor power enabled
+    UNKNOWN   // power state unknown (device offline)
 };
 
 
 struct SFDEVICE
 {
-    int pos_x;
-    int pos_y;
-    u_int16_t address;
-    u_int16_t calibration;
-    int rs485_descriptor;
-    double reg_voltage;
-    u_int32_t reg_counter;
-    u_int8_t reg_status;
-    u_int8_t current_flap;
-    enum SFDEVICE_STATE deviceState;
-    enum SFDEVICE_POWER powerState;
+    int pos_x;                       // position in matrix
+    int pos_y;                       // position in matrix
+    u_int16_t address;               // device address
+    u_int16_t calibration;           // calibration offset value
+    int rs485_descriptor;            // rs485 file descriptor
+    double reg_voltage;              // last read voltage
+    u_int32_t reg_counter;           // last rotation counter
+    u_int8_t reg_status;             // last status register
+    u_int8_t current_flap;           // current flap position
+    enum SFDEVICE_STATE deviceState; // device state
+    enum SFDEVICE_POWER powerState;  // power state
 };
 
 enum
 {
-    SFDEVICE_MAXDEV = 128,
-    SFDEVICE_MAX_X = 20,
-    SFDEVICE_MAX_Y = 4,
-    JSON_MAX_LINE_LEN = 256
+    SFDEVICE_MAXDEV = 128,  // maximum number of devices supported
+    SFDEVICE_MAX_X = 20,    // maximum x size of device matrix
+    SFDEVICE_MAX_Y = 4,     // maximum y size of device matrix
+    JSON_MAX_LINE_LEN = 256 // maximum length of a line in json file
 };
 
-// next free slot to register device
-int nextFreeSlot = -1;
-int deviceMap[SFDEVICE_MAX_X][SFDEVICE_MAX_Y];
-int deviceFd;
-struct SFDEVICE devices[SFDEVICE_MAXDEV];
 
+int nextFreeSlot = -1;                         // next free slot in device array
+int deviceMap[SFDEVICE_MAX_X][SFDEVICE_MAX_Y]; // device map matrix
+int deviceFd;                                  // rs485 file descriptor
+struct SFDEVICE devices[SFDEVICE_MAXDEV];      // device array
+
+// symbol table for flap characters
 const char *symbols[45] = {" ", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N",
                            "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "Ä", "Ö", "Ü",
                            "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ":", ".", "-", "?", "!"};
 
+/*
+* Initialize device manager.
+* Clear device map and set all devices as unallocated
+*
+* @param fd rs485 file descriptor
+*/
 void devicemgr_init(int fd)
 {
-    deviceFd = fd;
+    deviceFd = fd; // store rs485 file descriptor
     // reserve memory buffer
     for (int y = 0; y < SFDEVICE_MAX_Y; y++)
     {
@@ -79,10 +86,15 @@ void devicemgr_init(int fd)
     for (int ix = 0; ix < SFDEVICE_MAXDEV; ix++)
     {
         devices[ix].address = 0; // Adress 0 is only used for new units. should never be used for active unit
-        devices[ix].deviceState = UNALLOCATED;
+        devices[ix].deviceState = UNALLOCATED; // mark all devices as unallocated
     }
 }
-
+/*
+* Read status from device and store it in device struct
+* Returns 0 on success, -1 on read error, -2 if device not defined
+*
+* @param device_id ID of device to read
+*/
 int devicemgr_readStatus(int device_id)
 {
     if (devices[device_id].address > 0)
@@ -92,22 +104,22 @@ int devicemgr_readStatus(int device_id)
         u_int8_t _status =
             sfbus_read_status(devices[device_id].rs485_descriptor, devices[device_id].address, &_voltage, &_counter);
 
-        if (_status == 0xFF)
+        if (_status == 0xFF) // error reading status
         {
             devices[device_id].powerState = UNKNOWN;
             devices[device_id].deviceState = OFFLINE;
             return -1;
         }
-        devices[device_id].reg_voltage = _voltage;
+        devices[device_id].reg_voltage = _voltage; // store read values
         devices[device_id].reg_counter = _counter;
         devices[device_id].reg_status = _status;
         devices[device_id].powerState = ~((devices[device_id].reg_status >> 4)) & 0x01;
         devices[device_id].deviceState = ONLINE;
-        if ((((devices[device_id].reg_status) >> 5) & 0x01) > 0)
+        if ((((devices[device_id].reg_status) >> 5) & 0x01) > 0) // fail safe active
         {
             devices[device_id].deviceState = FAILED;
         }
-        return 0;
+        return 0; // success
     }
     else
     {
@@ -115,6 +127,12 @@ int devicemgr_readStatus(int device_id)
     }
 }
 
+/*
+* Read calibration data from device and store it in device struct
+* Returns 0 on success, -1 on read error, -2 if device not online
+* 
+* @param device_id ID of device to read
+*/
 int devicemgr_readCalib(int device_id)
 {
     if (devices[device_id].deviceState == ONLINE)
@@ -139,6 +157,11 @@ int devicemgr_readCalib(int device_id)
     }
 }
 
+/*
+* Generate json object with device map
+*
+* @return json object with device map
+*/
 json_object *devicemgr_printMap()
 {
     json_object *rows_array = json_object_new_array();
@@ -154,6 +177,12 @@ json_object *devicemgr_printMap()
     return rows_array;
 }
 
+/*
+* Generate json object with device details
+*
+* @param device_id ID of device to print
+* @param root json object to add details to
+*/
 void devicemgr_printDetails(int device_id, json_object *root)
 {
     // generate json object with status
@@ -172,7 +201,7 @@ void devicemgr_printDetails(int device_id, json_object *root)
     json_object_object_add(status, "rotations", json_object_new_int(devices[device_id].reg_counter));
     json_object_object_add(status, "power", json_object_new_boolean(devices[device_id].powerState));
     json_object_object_add(status, "raw", json_object_new_uint64(devices[device_id].reg_status));
-    switch (devices[device_id].deviceState)
+    switch (devices[device_id].deviceState) // device state
     {
     case ONLINE:
         json_object_object_add(status, "device", json_object_new_string("ONLINE"));
@@ -193,7 +222,7 @@ void devicemgr_printDetails(int device_id, json_object *root)
         json_object_object_add(status, "device", json_object_new_string("UNALLOCATED"));
         break;
     }
-    json_object *status_flags = json_object_new_object();
+    json_object *status_flags = json_object_new_object(); // status flags
     json_object_object_add(status_flags,
                            "errorTooBig",
                            json_object_new_boolean(((devices[device_id].reg_status) >> 0) & 0x01));
@@ -219,6 +248,11 @@ void devicemgr_printDetails(int device_id, json_object *root)
     json_object_object_add(root, "status", status);
 }
 
+/*
+* Generate json object with details for all valid devices
+*
+* @param root json object to add details to
+*/
 void devicemgr_printDetailsAll(json_object *root)
 {
     json_object_object_add(root, "devices_all", json_object_new_int(nextFreeSlot + 1));
@@ -243,6 +277,12 @@ void devicemgr_printDetailsAll(json_object *root)
     json_object_object_add(root, "devices_online", json_object_new_int(devices_online));
 }
 
+/*
+* Set single device to flap character
+*
+* @param id ID of device to set
+* @param flap character to set
+*/
 void setSingle(int id, char flap)
 {
     // first convert char to flap id
@@ -260,12 +300,25 @@ void setSingle(int id, char flap)
     }
 }
 
-void setSingleRaw(int id, int flap)
+/*
+* Set single device to raw flap ID
+*
+* @param id ID of device to set
+* @param flap flap ID to set
+*/
+void devicemgr_setSingleRaw(int id, int flap)
 {
     sfbus_display_full(devices[id].rs485_descriptor, devices[id].address, flap);
     devices[id].current_flap = flap;
 }
 
+/*
+* Print text to device matrix starting at position (x,y)
+*
+* @param text text to print
+* @param x x position to start printing
+* @param y y position to start printing
+*/
 void devicemgr_printText(const char *text, int x, int y)
 {
     for (int i = 0; i < strlen(text); i++)
@@ -280,16 +333,25 @@ void devicemgr_printText(const char *text, int x, int y)
     }
 }
 
+/*
+* Print char to device matrix at position (x,y)
+*
+* @param flap flap ID to print
+* @param x x position to print
+* @param y y position to print
+*/
 void devicemgr_printFlap(int flap, int x, int y)
 {
     int this_id = deviceMap[x][y];
     if (this_id >= 0)
     {
-        setSingleRaw(this_id, flap);
+        devicemgr_setSingleRaw(this_id, flap);
     }
 }
 
-// clears complete screen
+/*
+* Clear all devices in matrix (set to flap 0)
+*/
 void devicemgr_clearscreen()
 {
     for (int ix = 0; ix < SFDEVICE_MAXDEV; ix++)
@@ -298,12 +360,22 @@ void devicemgr_clearscreen()
         {
             if (devices[ix].current_flap != 0)
             {
-                setSingleRaw(ix, 0);
+                devicemgr_setSingleRaw(ix, 0);
             }
         }
     }
 }
 
+/*
+* Register new device in device manager and add it to device map
+*
+* @param rs485_descriptor rs485 file descriptor
+* @param address device address
+* @param x x position in device matrix
+* @param y y position in device matrix
+* @param nid optional device ID to use (set to -1 to auto assign)
+* @return device ID assigned
+*/
 int devicemgr_register(int rs485_descriptor, u_int16_t address, int x, int y, int nid)
 {
     if (nid < 0)
@@ -337,7 +409,11 @@ int devicemgr_register(int rs485_descriptor, u_int16_t address, int x, int y, in
     return nid;
 }
 
-// refreshes status of all devices
+/*
+* Refresh all devices and update their status
+*
+* @return number of online devices
+*/
 int devicemgr_refresh()
 {
     int devices_online = 0;
@@ -355,7 +431,11 @@ int devicemgr_refresh()
     return devices_online;
 }
 
-// remove devices from system
+/*
+* Remove device from device manager
+*
+* @param id ID of device to remove
+*/
 int devicemgr_remove(int id)
 {
     devices[nextFreeSlot].deviceState = REMOVED;
@@ -364,6 +444,12 @@ int devicemgr_remove(int id)
     return 0;
 }
 
+/*
+* Save device manager configuration to json file
+*
+* @param file path to json file
+* @return 0 on success
+*/
 int devicemgr_save(char *file)
 {
     json_object *root = json_object_new_object();
@@ -388,8 +474,16 @@ int devicemgr_save(char *file)
     fptr = fopen(file, "w");
     fwrite(data, sizeof(char), strlen(data), fptr);
     fclose(fptr);
+    return 0;
 }
 
+/*
+* Load device manager configuration from json file and parse contents
+* Verify all required keys are present and refresh device status
+* 
+* @param file path to json file
+* @return 0 on success, -1 on error
+*/
 int devicemgr_load(char *file)
 {
     FILE *fptr;
@@ -465,6 +559,13 @@ int devicemgr_load(char *file)
     }
 }
 
+/*
+* Load single device from json object and register it
+* Verify all required keys are present
+*
+* @param device_obj json object with device data
+* @return 0 on success, -1 on error
+*/
 int devicemgr_load_single(json_object *device_obj)
 {
     json_object *jid = json_object_object_get(device_obj, "id");

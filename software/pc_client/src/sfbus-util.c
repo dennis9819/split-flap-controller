@@ -10,6 +10,14 @@
 #include "sfbus-util.h"
 #include "logging/logger.h"
 
+/*
+* Write new address to device
+*
+* @param fd: rs485 file descriptor
+* @param current: current device address
+* @param new: new device address
+* @return 0 on success, -1 on error
+*/
 int sfbusu_write_address(int fd, u_int16_t current, u_int16_t new)
 {
     log_message(LOG_INFO, "Writing new address 0x%04X to device with current address 0x%04X", new, current);
@@ -37,6 +45,14 @@ int sfbusu_write_address(int fd, u_int16_t current, u_int16_t new)
     return 0;
 }
 
+/*
+* Write new calibration data to device
+*
+* @param fd: rs485 file descriptor
+* @param address: device address
+* @param data: calibration data
+* @return 0 on success, -1 on error
+*/
 int sfbusu_write_calibration(int fd, u_int16_t address, u_int16_t data)
 {
     log_message(LOG_INFO, "Writing new calibration 0x%04X to device at address 0x%04X", data, address);

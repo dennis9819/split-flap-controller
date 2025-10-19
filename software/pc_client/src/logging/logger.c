@@ -12,6 +12,8 @@ const char *loglevel[] = {"TRACE","DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL
 void init_logger(int log_level)
 {
     log_level_global = log_level;
+    log_message(LOG_INFO, "Set log level to %s", loglevel[log_level_global]);
+
 }
 
 void log_message(int level, const char *message, ...)

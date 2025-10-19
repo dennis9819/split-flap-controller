@@ -8,7 +8,7 @@
  */
 
 #include "ftdi485.h"
-#include "logging/logger.h"
+#include "../logging/logger.h"
 
 /*
 * Open RS485 Interface (FT232RL)

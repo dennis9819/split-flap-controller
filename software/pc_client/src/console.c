@@ -9,17 +9,39 @@
 
 #include "console.h"
 
-char *device_config_file = "./flapconfig.json";
+char *device_config_file;
 int fd;
-// command handlers
+/*
+* Command parser for wsserver.
+* Parses incoming json commands and executes corresponding functions.
+*/
 
-// dump config/ all devices
+
+/*
+* command: dm_dump
+* description: dump all device details as json to websocket
+*
+* request format: { "command": "dm_dump" }
+* response format: { ... all device details ... }
+* 
+* @param req: json request object
+* @param res: json response object
+*/
 void cmd_dm_dump(json_object *req, json_object *res)
 {
     devicemgr_printDetailsAll(res);
 }
 
-// describe single device
+/*
+* command: dm_describe
+* description: describe device with id as json to websocket
+*
+* request format: { "command": "dm_describe", "id": <device_id> }
+* response format: { ... device details ... }
+* 
+* @param req: json request object
+* @param res: json response object
+*/
 void cmd_dm_describe(json_object *req, json_object *res)
 {
     json_object *id;
@@ -34,7 +56,16 @@ void cmd_dm_describe(json_object *req, json_object *res)
     }
 }
 
-// register new device
+/*
+* command: dm_register
+* description: register new device at address with x,y position
+* 
+* request format: { "command": "dm_register", "address": <address>, "x": <x>, "y": <y> }
+* response format: { "id": <new_device_id> }
+*
+* @param req: json request object
+* @param res: json response object
+*/
 void cmd_dm_register(json_object *req, json_object *res)
 {
     json_object *jaddress, *jx, *jy;
@@ -65,7 +96,16 @@ void cmd_dm_register(json_object *req, json_object *res)
     }
 }
 
-// refresh all devices
+/*
+* command: dm_refresh
+* description: refresh all devices and update their status
+* 
+* request format: { "command": "dm_refresh" }
+* response format: { "devices_online": <number_of_online_devices> }
+*
+* @param req: json request object
+* @param res: json response object
+*/
 void cmd_dm_refresh(json_object *req, json_object *res)
 {
     int devices_online = devicemgr_refresh();
@@ -73,7 +113,16 @@ void cmd_dm_refresh(json_object *req, json_object *res)
 }
 
 
-// remove device
+/*
+* command: dm_remove
+* description: remove device with id from device manager
+*
+* request format: { "command": "dm_remove", "id": <device_id> }
+* response format: { "ack": true }
+*
+* @param req: json request object
+* @param res: json response object
+*/
 void cmd_dm_remove(json_object *req, json_object *res)
 {
     json_object *jid;
@@ -91,14 +140,32 @@ void cmd_dm_remove(json_object *req, json_object *res)
     }
 }
 
-// save all devices
+/*
+* command: dm_save
+* description: save all devices to config file
+*
+* request format: { "command": "dm_save" }
+* response format: { "ack": true }
+*
+* @param req: json request object
+* @param res: json response object
+*/
 void cmd_dm_save(json_object *req, json_object *res)
 {
     devicemgr_save(device_config_file);
     json_object_object_add(res, "ack", json_object_new_boolean(true));
 }
 
-// load all devices
+/*
+* command: dm_load
+* description: load all devices from config file
+*
+* request format: { "command": "dm_load" }
+* response format: { "ack": true }
+*
+* @param req: json request object
+* @param res: json response object
+*/
 void cmd_dm_load(json_object *req, json_object *res)
 {
     devicemgr_load(device_config_file);
@@ -106,7 +173,16 @@ void cmd_dm_load(json_object *req, json_object *res)
 }
 
 
-// print string on display
+/*
+* command: dm_print
+* description: print text to display at position (x,y)
+*
+* request format: { "command": "dm_print", "x": <x>, "y": <y>, "string": <text> }
+* response format: { "ack": true }
+*
+* @param req: json request object
+* @param res: json response object
+*/
 void cmd_dm_print(json_object *req, json_object *res)
 {
     json_object *jx = json_object_object_get(req, "x");
@@ -137,7 +213,16 @@ void cmd_dm_print(json_object *req, json_object *res)
     }
 }
 
-// set flap on display
+/*
+* command: dm_print_single
+* description: print single flap to display at position (x,y)
+*
+* request format: { "command": "dm_print_single", "x": <x>, "y": <y>, "flap": <flap_id> }
+* response format: { "ack": true }
+*
+* @param req: json request object
+* @param res: json response object
+*/
 void cmd_dm_print_single(json_object *req, json_object *res)
 {
     json_object *jx = json_object_object_get(req, "x");
@@ -169,16 +254,33 @@ void cmd_dm_print_single(json_object *req, json_object *res)
     }
 }
 
-// clear display
+/*
+* command: dm_clear
+* description: clear all displays (set to flap 0)
+*
+* request format: { "command": "dm_clear" }
+* response format: { "ack": true }
+*
+* @param req: json request object
+* @param res: json response object
+*/
 void cmd_dm_clear(json_object *req, json_object *res)
 {
     devicemgr_clearscreen();
     json_object_object_add(res, "ack", json_object_new_boolean(true));
-    
 }
 
 
-// ping device
+/*
+* command: dr_ping
+* description: ping device at address
+*
+* request format: { "command": "dr_ping", "address": <address> }
+* response format: { "success": true/false }
+*
+* @param req: json request object
+* @param res: json response object  
+*/
 void cmd_dr_ping(json_object *req, json_object *res)
 {
     json_object *jaddr = json_object_object_get(req, "address");
@@ -200,7 +302,16 @@ void cmd_dr_ping(json_object *req, json_object *res)
     }
 }
 
-// set device address
+/*
+* command: dr_setaddress
+* description: set new address for device
+*
+* request format: { "command": "dr_setaddress", "address": <current_address>, "newaddress": <new_address> }
+* response format: { "success": true/false }    
+*
+* @param req: json request object   
+* @param res: json response object
+*/
 void cmd_dr_setaddress(json_object *req, json_object *res)
 {
     json_object *jaddr = json_object_object_get(req, "address");
@@ -228,6 +339,16 @@ void cmd_dr_setaddress(json_object *req, json_object *res)
     }
 }
 
+/*
+* command: dr_setcalibration
+* description: set calibration value for device
+*
+* request format: { "command": "dr_setcalibration", "address": <address>, "calibration": <calibration_value> }
+* response format: { "success": true/false }
+*
+* @param req: json request object
+* @param res: json response object
+*/
 void cmd_dr_setcalibration(json_object *req, json_object *res)
 {
     json_object *jaddr = json_object_object_get(req, "address");
@@ -255,6 +376,16 @@ void cmd_dr_setcalibration(json_object *req, json_object *res)
     }
 }
 
+/*
+* command: dr_reset
+* description: reset device at address  
+*
+* request format: { "command": "dr_reset", "address": <address> }
+* response format: { "ack": true }
+*
+* @param req: json request object
+* @param res: json response object
+*/
 void cmd_dr_reset(json_object *req, json_object *res)
 {
     json_object *jaddr = json_object_object_get(req, "address");
@@ -270,6 +401,16 @@ void cmd_dr_reset(json_object *req, json_object *res)
     }
 }
 
+/*
+* command: dr_display
+* description: set display flap at address
+*
+* request format: { "command": "dr_display", "address": <address>, "flap": <flap_id>, "full": <true/false> }
+* response format: { "ack": true }
+*
+* @param req: json request object
+* @param res: json response object
+*/
 void cmd_dr_display(json_object *req, json_object *res)
 {
     json_object *jaddr = json_object_object_get(req, "address");
@@ -303,6 +444,16 @@ void cmd_dr_display(json_object *req, json_object *res)
     }
 }
 
+/*
+* command: dr_power
+* description: set motor power state at address
+*
+* request format: { "command": "dr_power", "address": <address>, "power": <true/false> }
+* response format: { "ack": true }  
+*
+* @param req: json request object
+* @param res: json response object
+*/
 void cmd_dr_power(json_object *req, json_object *res)
 {
     json_object *jaddr = json_object_object_get(req, "address");
@@ -332,7 +483,13 @@ void cmd_dr_power(json_object *req, json_object *res)
 }
 
 
-// command parser
+/*
+* Command parser for wsserver.
+* Parses incoming json commands and executes corresponding functions.
+*
+* @param req: json request object
+* @return json response object
+*/
 json_object *parse_command(json_object *req)
 {
     json_object *commandObj;
@@ -425,12 +582,16 @@ json_object *parse_command(json_object *req)
     return NULL;
 }
 
-
-void start_console(int _fd)
+/*
+* Start console with webserver and device manager
+*
+* @param _fd: rs485 file descriptor
+* @param configFile: path to device manager config file
+*/
+void start_console(int _fd, char *configFile)
 {
-    fd = _fd;
-    // init device manager
-    devicemgr_init(fd);
-    // start server
-    start_webserver(&parse_command);
+    device_config_file = configFile; // set config file path
+    fd = _fd;                        // set rs485 file descriptor
+    devicemgr_init(fd);              // init device manager
+    start_webserver(&parse_command); // start webserver with command parser
 }

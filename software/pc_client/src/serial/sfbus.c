@@ -8,12 +8,18 @@
  */
 
 #include "sfbus.h"
-#include "logging/logger.h"
+#include "../logging/logger.h"
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
 
-
+/*
+* Print buffer as hex values to stdout
+* Used for debugging purposes
+*
+* @param buffer: buffer to print
+* @param length: length of buffer
+*/
 void print_charHex(char *buffer, int length)
 {
     int _tlength = length;
@@ -25,26 +31,51 @@ void print_charHex(char *buffer, int length)
     }
 }
 
+/*
+* Print received buffer as hex values to stdout
+* Used for debugging purposes
+*
+* @param buffer: buffer to print
+* @param length: length of buffer
+* @param address: device address
+*/
 void print_bufferHexRx(char *buffer, int length, u_int16_t address)
 {
     if (log_message_header(LOG_TRACE) > 0)
     {
-        printf("Rx (0x%04X): ", address);
+        printf("Rx at address: 0x%04X Data: ", address);
         print_charHex(buffer, length);
         printf("| %i bytes received\n", length);
     }
 }
 
+/*
+* Print transmitted buffer as hex values to stdout
+* Used for debugging purposes
+*
+* @param buffer: buffer to print
+* @param length: length of buffer
+* @param address: device address
+*/
 void print_bufferHexTx(char *buffer, int length, u_int16_t address)
 {
     if (log_message_header(LOG_TRACE) > 0)
     {
-        printf("Tx (0x%04X): ", address);
+        printf("Tx at address: 0x%04X Data: ", address);
         print_charHex(buffer, length);
         printf("| %i bytes sent\n", length);
     }
 }
 
+/*
+* Receive SFBus frame with protocol version 2.0 and wait for valid data
+* Fails after 2 unsuccessful attempts
+*
+* @param fd: rs485 file descriptor
+* @param address: device address
+* @param buffer: buffer to store received data
+* @return length of received data on success, -1 on error
+*/
 ssize_t sfbus_recv_frame_wait(int fd, u_int16_t address, char *buffer)
 {
     ssize_t len = 0;
@@ -63,6 +94,15 @@ ssize_t sfbus_recv_frame_wait(int fd, u_int16_t address, char *buffer)
     return len;
 }
 
+/*
+* Receive SFBus frame with protocol version 2.0
+* Handles start byte, address check and CRC verification
+*
+* @param fd: rs485 file descriptor
+* @param address: device address
+* @param buffer: buffer to store received data
+* @return length of received data on success, -1 on error
+*/
 ssize_t sfbus_recv_frame_v2(int fd, u_int16_t address, char *buffer)
 {
 
@@ -116,14 +156,20 @@ ssize_t sfbus_recv_frame_v2(int fd, u_int16_t address, char *buffer)
         {
             print_bufferHexRx(buffer, frm_length - 4, address);
         }
-        log_message(LOG_DEBUG,"crc check failed! expected: %04X received: %04X", calc_crc, frm_crc);
+        log_message(LOG_DEBUG, "crc check failed! expected: %04X received: %04X", calc_crc, frm_crc);
 
         return -1;
     }
 }
 
 /*
-* Send SFBus frame with protocol version 2.0 and calculated CRC
+* Send SFBus frame with protocol version 2.0
+* Generates frame with start byte, address and crc checksum
+*
+* @param fd: rs485 file descriptor
+* @param address: device address
+* @param length: length of payload
+* @param buffer: payload buffer to send
 */
 void sfbus_send_frame_v2(int fd, u_int16_t address, u_int8_t length, char *buffer)
 {
@@ -150,8 +196,11 @@ void sfbus_send_frame_v2(int fd, u_int16_t address, u_int8_t length, char *buffe
 }
 
 /*
-* Send ping to device at specified address.
-* returns 0 on success, else 1.
+* Send ping command to device and wait for response
+*
+* @param fd: rs485 file descriptor
+* @param address: device address
+* @return 0 on success, 1 on failure
 */
 int sfbus_ping(int fd, u_int16_t address)
 {
@@ -173,6 +222,15 @@ int sfbus_ping(int fd, u_int16_t address)
     }
 }
 
+/*
+* Read data from device EEPROM
+* Verifies received data and checks for ACK byte 
+*
+* @param fd: rs485 file descriptor
+* @param address: device address
+* @param buffer: buffer to store received data
+* @return length of received data on success, -1 on error
+*/
 int sfbus_read_eeprom(int fd, u_int16_t address, char *buffer)
 {
     char *cmd = "\xF0";
@@ -195,6 +253,16 @@ int sfbus_read_eeprom(int fd, u_int16_t address, char *buffer)
     return len;
 }
 
+/*
+* Write data to device EEPROM
+* Verifies received data and checks for ACK byte
+*
+* @param fd: rs485 file descriptor
+* @param address: device address
+* @param wbuffer: buffer with data to write
+* @param rbuffer: buffer to store received data
+* @return length of received data on success, -1 on error
+*/
 int sfbus_write_eeprom(int fd, u_int16_t address, char *wbuffer, char *rbuffer)
 {
     char *cmd = malloc(5);
@@ -221,6 +289,14 @@ int sfbus_write_eeprom(int fd, u_int16_t address, char *wbuffer, char *rbuffer)
     return len;
 }
 
+/*
+* Send display command to device to set flap position
+* 
+* @param fd: rs485 file descriptor
+* @param address: device address
+* @param flap: flap ID to set
+* @return 0 on success
+*/
 int sfbus_display(int fd, u_int16_t address, u_int8_t flap)
 {
     char *cmd = malloc(5);
@@ -231,6 +307,14 @@ int sfbus_display(int fd, u_int16_t address, u_int8_t flap)
     return 0;
 }
 
+/*
+* Send display command to device to set flap position with full rotation
+*
+* @param fd: rs485 file descriptor
+* @param address: device address
+* @param flap: flap ID to set
+* @return 0 on success
+*/
 int sfbus_display_full(int fd, u_int16_t address, u_int8_t flap)
 {
     char *cmd = malloc(5);
@@ -241,6 +325,15 @@ int sfbus_display_full(int fd, u_int16_t address, u_int8_t flap)
     return 0;
 }
 
+/*
+* Read device status including voltage operation counter and status flags
+* 
+* @param fd: rs485 file descriptor
+* @param address: device address
+* @param voltage: pointer to store read voltage value
+* @param counter: pointer to store read operation counter value
+* @return status byte on success, 0xFF on error
+*/
 u_int8_t sfbus_read_status(int fd, u_int16_t address, double *voltage, u_int32_t *counter)
 {
     char *cmd = "\xF8";
@@ -260,17 +353,30 @@ u_int8_t sfbus_read_status(int fd, u_int16_t address, double *voltage, u_int32_t
 
     *voltage = __voltage;
     *counter = (u_int32_t)_counter;
-
-    free(_buffer);
-    return 0x00;
+    u_int8_t status = *(_buffer + 0) & 0xFF; // store status byte temporarily
+    free(_buffer);                           // free rx buffer to prevent memory leak
+    return status;
 }
 
+/*
+* Reset device
+*
+* @param fd: rs485 file descriptor  
+* @param address: device address
+*/
 void sfbus_reset_device(int fd, u_int16_t address)
 {
     char *cmd = "\x30";
     sfbus_send_frame_v2(fd, address, strlen(cmd), cmd);
 }
 
+/*
+* Enable or disable motor power on device
+*
+* @param fd: rs485 file descriptor
+* @param address: device address
+* @param state: 0 = disable power, >0 = enable power
+*/
 void sfbus_motor_power(int fd, u_int16_t address, u_int8_t state)
 {
     char *cmd = "\x20";
@@ -281,6 +387,14 @@ void sfbus_motor_power(int fd, u_int16_t address, u_int8_t state)
     sfbus_send_frame_v2(fd, address, 1, cmd);
 }
 
+/*
+* Utility function to calculate CRC16 checksum
+* Used for SFBus protocol v2.0
+*
+* @param buffer: buffer to calculate checksum for
+* @param len: length of buffer
+* @return calculated CRC16 checksum
+*/
 u_int16_t calc_CRC16(char *buffer, u_int8_t len)
 {
     u_int16_t crc16 = 0xFFFF;

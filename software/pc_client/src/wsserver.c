@@ -17,7 +17,11 @@
 json_object *(*commandparser_func)(json_object *);
 
 // this sections handles ws connections and communications
-// called on opening websocket client
+
+/*
+* called on opening websocket client
+* @param client: websocket client connection
+*/
 void ws_opencon(ws_cli_conn_t client)
 {
     char *cli;
@@ -25,7 +29,10 @@ void ws_opencon(ws_cli_conn_t client)
     log_message(LOG_DEBUG, "WebSocket connection opened, addr: %s", cli);
 }
 
-// called on closing websocket client
+/*
+* called on closing websocket client
+* @param client: websocket client connection
+*/
 void ws_closecon(ws_cli_conn_t client)
 {
     char *cli;
@@ -33,7 +40,15 @@ void ws_closecon(ws_cli_conn_t client)
     log_message(LOG_DEBUG, "WebSocket connection closed, addr: %s", cli);
 }
 
-// called on receiving websocket message
+/*
+* called on receiving websocket message
+* Handles incoming websocket messages, parses json commands and sends responses.
+*
+* @param client: websocket client connection
+* @param msg: received message
+* @param size: size of received message
+* @param type: type of message
+*/
 void ws_messagehandler(ws_cli_conn_t client, const unsigned char *msg, uint64_t size, int type)
 {
     char *cli = ws_getaddress(client);
@@ -76,12 +91,25 @@ void ws_messagehandler(ws_cli_conn_t client, const unsigned char *msg, uint64_t 
     free(tok); // always free tokenizer, to prevent memory leak
 }
 
+/*
+* send json response to websocket client
+*
+* @param client: websocket client connection
+* @param res: json response object
+*/
 void send_json_response(ws_cli_conn_t client, json_object *res)
 {
     const char *message = json_object_to_json_string_ext(res, JSON_C_TO_STRING_PRETTY);
     ws_sendframe_txt(client, message);
 }
 
+/*
+* send json error to websocket client
+* 
+* @param client: websocket client connection
+* @param error: error message
+* @param detail: error detail message
+*/
 void send_json_error(ws_cli_conn_t client, char *error, const char *detail)
 {
     json_object *root = json_object_new_object();
@@ -90,7 +118,12 @@ void send_json_error(ws_cli_conn_t client, char *error, const char *detail)
     send_json_response(client, root);
 }
 
-// starting webserver
+/* 
+* Start websocket server
+*
+* @param commandparser_func_ptr: pointer to command parser function
+* @return 0 on success
+*/
 int start_webserver(json_object *(*commandparser_func_ptr)(json_object *))
 {
     commandparser_func = commandparser_func_ptr;
