@@ -55,7 +55,7 @@ void ws_messagehandler(ws_cli_conn_t client, const unsigned char *msg, uint64_t 
     log_message(LOG_DEBUG, "WebSocket received message: %s (%zu), from: %s", msg, size, cli);
 
     json_tokener *tok = json_tokener_new();
-    json_object *req = json_tokener_parse_ex(tok, msg, size);
+    json_object *req = json_tokener_parse_ex(tok, (const char*)msg, size);
     enum json_tokener_error jerr;
     jerr = json_tokener_get_error(tok);
     if (jerr != json_tokener_success)

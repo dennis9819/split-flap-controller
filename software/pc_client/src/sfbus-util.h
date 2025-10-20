@@ -7,7 +7,7 @@
  *
  */
 
-#include "sfbus.h"
+#include "serial/sfbus.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

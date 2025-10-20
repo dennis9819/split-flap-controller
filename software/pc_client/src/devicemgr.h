@@ -7,7 +7,7 @@
  *
  */
 
-#include "sfbus.h"
+#include "serial/sfbus.h"
 #include <ctype.h>
 #include <errno.h> // Error integer and strerror() function
 #include <fcntl.h> // Contains file controls like O_RDWR

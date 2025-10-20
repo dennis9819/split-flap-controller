@@ -18,9 +18,9 @@
 
 #include "console.h"
 #include "devicemgr.h"
-#include "ftdi485.h"
 #include "logging/logger.h"
-#include "sfbus.h"
+#include "serial/ftdi485.h"
+#include "serial/sfbus.h"
 
 extern char *optarg;
 
