@@ -19,20 +19,30 @@ __Ongoing Project! This repository is not final.__
 
 ### Hardware
 - SMD-based controller board (Atmega8 MCU)  
-- Modular RS-485 communication chain  
-- Integrated motor driver and position sensor handling  
+- Modular RS-485 communication chain 
+- Integrated motor driver and position sensor handling
 - Modules connect to a single backplane
 - Hall-effect sensor homing
+- Robust error handling
+  - detects homing faults, stuck drums, overcurrent and bus errors
+  - activates a failSafe condition on critical fault
+  - can be reset via RS485 in most conditions
+  - checks validity of each packet via checksum
+  
 
 ### Firmware
 - Lightweight communication protocol with checksum and addressing  
 - Fault detection (homing failure, overcurrent, invalid position)  
 - Persistent settings stored in EEPROM  
+- CRC check of each message
 
 ### Software
 - WebSocket-based control server  
 - Modular architecture for future GUI or API integrations  
 - Easily portable to other platforms and MCUs
+- Nginx Webserver allows you to controll the display with your smartphone
+- very fast and written in plan c. I'm using libjson and libws for JSON handling and the WebSocket server
+
 
 ## CAD
 This display is designed in **Fusion360**. All schematics and boards are designed in **KiCAD 9**.
@@ -49,6 +59,7 @@ This project is open source and available under the [AGPL-3.0 License](LICENSE).
 - [SFBus Protocol](software/pc_client/doc/sfbus-proto.md)
 - [Websockets Protocol](software/pc_client/doc/api-doc.md)
 - [BOM](cad/BOM_FlapUnit.md)
+- Build guide wil follow soon!
 
 ## Power Consumption
 Each Module pulls arround 110mA. This is roughly 1.4W of power. 
