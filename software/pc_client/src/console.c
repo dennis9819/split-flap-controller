@@ -592,6 +592,5 @@ void start_console(int _fd, char *configFile)
 {
     device_config_file = configFile; // set config file path
     fd = _fd;                        // set rs485 file descriptor
-    devicemgr_init(fd);              // init device manager
     start_webserver(&parse_command); // start webserver with command parser
 }

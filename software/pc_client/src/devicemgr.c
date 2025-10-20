@@ -169,7 +169,7 @@ int devicemgr_readCalib(int device_id)
         }
         else
         {
-            log_message(LOG_ERROR, "Error reading eeprom from %i", device_id);
+            log_message(LOG_ERROR, "Error reading eeprom from device %i", device_id);
             free(buffer_r);
             return -1;
         }
@@ -450,8 +450,14 @@ void devicemgr_printFlap(int flap, int x, int y)
     if (this_id >= 0 && this_id < SFDEVICE_MAXDEV)
     {
         devicemgr_setSingleRaw(this_id, flap);
-    }else{
-        log_message(LOG_ERROR, "device id %i at position (%i,%i) is invalid. cannot print to this location", this_id,x,y);
+    }
+    else
+    {
+        log_message(LOG_ERROR,
+                    "device id %i at position (%i,%i) is invalid. cannot print to this location",
+                    this_id,
+                    x,
+                    y);
     }
 }
 
@@ -581,7 +587,7 @@ int devicemgr_refresh()
 */
 int devicemgr_remove(int id)
 {
-    log_message(LOG_DEBUG,"Removing device id %i",id);
+    log_message(LOG_DEBUG, "Removing device id %i", id);
     if (id < 0 || id >= SFDEVICE_MAXDEV)
     {
         log_message(LOG_ERROR, "device id %i out of bounds", id);
@@ -661,7 +667,8 @@ int devicemgr_save(char *file)
 */
 int devicemgr_load(char *file)
 {
-    FILE *fptr;
+    log_message(LOG_INFO, "load config data from %s", file);
+
     char *line_in_file = malloc(JSON_MAX_LINE_LEN); // maximum of 256 bytes per line;
     if (line_in_file == NULL)
     {
@@ -669,8 +676,7 @@ int devicemgr_load(char *file)
         return -1;
     }
 
-    log_message(LOG_INFO, "load config data from %s\n", file);
-
+    FILE *fptr;
     fptr = fopen(file, "r"); // open file for reading
     if (fptr == NULL)        // error opening file
     {
@@ -682,27 +688,27 @@ int devicemgr_load(char *file)
     json_object *jobj = NULL;
     int stringlen = 0;
     enum json_tokener_error jerr;
-
     do // read lines until json is complete
     {
         char *read_ret = fgets(line_in_file, JSON_MAX_LINE_LEN, fptr); // read line from file
-        if (read_ret == NULL || line_in_file == NULL)                  // error reading line
+        if (line_in_file == NULL)                                      // error reading line
         {
+            log_message(LOG_ERROR, "Error reading line from file %s", file);
             fclose(fptr);           //free file pointer
             json_tokener_free(tok); //free tokenizer
             free(line_in_file);     // free line in file buffer
-            log_message(LOG_ERROR, "Error reading line from file %s", file);
             return -1;
         }
         stringlen = strlen(line_in_file);
+
         // printf("Read line with chars: %i : %s", stringlen, line_in_file); // only for testing
         jobj = json_tokener_parse_ex(tok, line_in_file, stringlen);
+
         if (read_ret == NULL) // end of file reached
         {
             break;
         }
     } while ((jerr = json_tokener_get_error(tok)) == json_tokener_continue); // continue until json is complete
-
     // cleanup
     fclose(fptr);           //free file pointer
     json_tokener_free(tok); //free tokenizer
@@ -729,12 +735,12 @@ int devicemgr_load(char *file)
     if (!json_object_object_get_ex(jobj, "nextFreeSlot", &next_free))
     {
         log_message(LOG_ERROR, "%s", "Key 'nextFreeSlot' not found.");
+        json_object_put(jobj);
         return -1;
     }
     else
     {
         nextFreeSlot = json_object_get_int(next_free);
-        json_object_put(next_free);
     }
 
     // clear config

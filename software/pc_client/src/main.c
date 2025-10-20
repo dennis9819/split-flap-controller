@@ -122,6 +122,8 @@ int main(int argc, char *argv[])
     }
 
     int fd = rs485_init(port, B57600); // setup rs485
+    devicemgr_init(fd);                // init device manager
+    devicemgr_load(config_file);       // load config file on startup
     start_console(fd, config_file);    // start console
     return 0;
 }

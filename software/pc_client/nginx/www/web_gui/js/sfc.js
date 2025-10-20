@@ -9,9 +9,7 @@ const socket = new WebSocket(`ws://${hostname}/manage/`);
 
 // Connection opened
 socket.addEventListener("open", (event) => {
-  SFCCommandAsync({ "command": "dm_load" });
-
-  //changeView("view_storage");
+  
 });
 
 socket.addEventListener("message", (event) => {
