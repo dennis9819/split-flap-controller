@@ -137,7 +137,7 @@ int devicemgr_readCalib(int device_id)
 {
     if (devices[device_id].deviceState == ONLINE)
     {
-        char *buffer_r = malloc(256);
+        char *buffer_r = malloc(SFBUS_MAX_BUFFER_SIZE);
         if (sfbus_read_eeprom(devices[device_id].rs485_descriptor, devices[device_id].address, buffer_r) > 0)
         {
             uint16_t calib_data = (*(buffer_r + 2) & 0xFF | ((*(buffer_r + 3) << 8) & 0xFF00));

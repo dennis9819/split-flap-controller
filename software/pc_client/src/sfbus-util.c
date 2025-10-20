@@ -27,8 +27,8 @@ int sfbusu_write_address(int fd, u_int16_t current, u_int16_t new)
         return -1;
     }
     // read current eeprom status
-    char *buffer_w = malloc(64);
-    char *buffer_r = malloc(64);
+    char *buffer_w = malloc(SFBUS_MAX_BUFFER_SIZE);
+    char *buffer_r = malloc(SFBUS_MAX_BUFFER_SIZE);
     if (sfbus_read_eeprom(fd, current, buffer_w) < 0)
     {
         log_message(LOG_ERROR, "Cannot write address: Error reading eeprom");
@@ -57,8 +57,8 @@ int sfbusu_write_calibration(int fd, u_int16_t address, u_int16_t data)
 {
     log_message(LOG_INFO, "Writing new calibration 0x%04X to device at address 0x%04X", data, address);
     // read current eeprom status
-    char *buffer_w = malloc(64);
-    char *buffer_r = malloc(64);
+    char *buffer_w = malloc(SFBUS_MAX_BUFFER_SIZE);
+    char *buffer_r = malloc(SFBUS_MAX_BUFFER_SIZE);
     if (sfbus_read_eeprom(fd, address, buffer_w) < 0)
     {
         log_message(LOG_ERROR, "Cannot write calibration: Error reading eeprom");

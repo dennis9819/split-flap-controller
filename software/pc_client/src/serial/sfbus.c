@@ -20,7 +20,7 @@
 * @param buffer: buffer to print
 * @param length: length of buffer
 */
-void print_charHex(char *buffer, int length)
+void print_charHex(const char *buffer, int length)
 {
     int _tlength = length;
     while (_tlength > 0)
@@ -78,20 +78,34 @@ void print_bufferHexTx(char *buffer, int length, u_int16_t address)
 */
 ssize_t sfbus_recv_frame_wait(int fd, u_int16_t address, char *buffer)
 {
-    ssize_t len = 0;
-    int retryCount = 2;
-    do
+    ssize_t len = 0;                                           // length of received data
+    for (int rcount = 0; rcount < SFBUS_RETRY_COUNT; rcount++) // retry loop
     {
-        len = sfbus_recv_frame_v2(fd, address, buffer);
-        retryCount--;
-        if (retryCount == 0)
+        log_message(LOG_DEBUG, "Waiting for data from 0x%04X (attempt %i/2)", address, rcount + 1);
+        len = sfbus_recv_frame_v2(fd, address, buffer); // receive frame
+        if (len > 0)                                    // valid data received
         {
-            log_message(LOG_WARNING, "RX timeout waiting for data at 0x%04X", address);
+            break;
+        }
+    }
+    if (len <= 0)
+    {
+        log_message(LOG_WARNING, "No valid data received from 0x%04X after %i attempts!", address, SFBUS_RETRY_COUNT);
+        return -1;
+    }
+    else
+    {
+        if (len > 4) // valid data length. skip first 4 bytes (header)
+        {
+            print_bufferHexRx(buffer, len - 4, address);
+            return len - 4; // also return length without header
+        }
+        else
+        {
+            log_message(LOG_WARNING, "Invalid data length received from 0x%04X!", address);
             return -1;
         }
-    } while (len <= 0);
-    print_bufferHexRx(buffer, len - 4, address);
-    return len;
+    }
 }
 
 /*
@@ -106,10 +120,10 @@ ssize_t sfbus_recv_frame_wait(int fd, u_int16_t address, char *buffer)
 ssize_t sfbus_recv_frame_v2(int fd, u_int16_t address, char *buffer)
 {
 
-    memset(buffer, 0, sizeof(buffer));
+    memset(buffer, 0, sizeof(char) * SFBUS_MAX_BUFFER_SIZE); // clear receive buffer
     // wait for start byte
     char byte = 0x00;
-    int retryCount = 3;
+    int retryCount = SFBUS_RETRY_COUNT;
     while (byte != '+')
     {
         byte = 0x00;
@@ -127,13 +141,25 @@ ssize_t sfbus_recv_frame_v2(int fd, u_int16_t address, char *buffer)
 
     read(fd, &frm_version, 1);
     read(fd, &frm_length, 1);
-    read(fd, &frm_addr_l, 1);
     read(fd, &frm_addr_h, 1);
+    read(fd, &frm_addr_l, 1);
 
-    u_int16_t dst_addr = frm_addr_l | (frm_addr_h << 8);
-    if (dst_addr != address)
+    u_int16_t dst_addr = frm_addr_h | (frm_addr_l << 8);
+    if (dst_addr != address) // abort on address mismatch
     {
-        //return 0;
+        return 0;
+    }
+
+    if (frm_length == 0) // abort on zero length. Should not happen!
+    {
+        log_message(LOG_WARNING, "Zero length frame received at 0x%04X!", address);
+        return 0;
+    }
+
+    if (frm_length < 4 || frm_length > SFBUS_MAX_BUFFER_SIZE) // abort on invalid length. Should not happen!
+    {
+        log_message(LOG_WARNING, "Invalid frame length %i received at 0x%04X!", frm_length, address);
+        return -1;
     }
 
     // read all bytes:
@@ -154,7 +180,7 @@ ssize_t sfbus_recv_frame_v2(int fd, u_int16_t address, char *buffer)
     {
         if (log_message_header(LOG_TRACE) > 0)
         {
-            print_bufferHexRx(buffer, frm_length - 4, address);
+            print_bufferHexRx(buffer, frm_length, address);
         }
         log_message(LOG_DEBUG, "crc check failed! expected: %04X received: %04X", calc_crc, frm_crc);
 
@@ -174,13 +200,13 @@ ssize_t sfbus_recv_frame_v2(int fd, u_int16_t address, char *buffer)
 void sfbus_send_frame_v2(int fd, u_int16_t address, u_int8_t length, char *buffer)
 {
     int frame_size_complete = length + 7;      // calculate size of complete transmission
-                                               // (header + frame)
+                                               // (header + frame + crc)
     char *frame = malloc(frame_size_complete); // allocate frame buffer
 
     // assemble tx data
     *(frame + 0) = 0x2B;               // startbyte
     *(frame + 1) = 0x01;               // protocol version (v2.0)
-    *(frame + 2) = length + 4;         // length of frame
+    *(frame + 2) = length + 4;         // length of frame data + address + crc
     *(frame + 3) = (address);          // address high byte
     *(frame + 4) = ((address >> 8));   // address low byte
     memcpy(frame + 5, buffer, length); // copy payload to packet
@@ -191,6 +217,14 @@ void sfbus_send_frame_v2(int fd, u_int16_t address, u_int8_t length, char *buffe
     *(frame + (frame_size_complete - 1)) = ((crc >> 8)); // address low byte
     // send data
     int result = write(fd, frame, frame_size_complete);
+    if (result != frame_size_complete)
+    {
+        log_message(LOG_ERROR,
+                    "Error sending data to 0x%04X! Only %i of %i bytes sent.",
+                    address,
+                    result,
+                    frame_size_complete);
+    }
     print_bufferHexTx(frame, frame_size_complete, address);
     free(frame); // free frame buffer
 }
@@ -204,8 +238,8 @@ void sfbus_send_frame_v2(int fd, u_int16_t address, u_int8_t length, char *buffe
 */
 int sfbus_ping(int fd, u_int16_t address)
 {
-    char *cmd = "\xFE";        // command byte for ping
-    char *buffer = malloc(64); // allocate rx buffer
+    char *cmd = "\xFE";                           // command byte for ping
+    char *buffer = malloc(SFBUS_MAX_BUFFER_SIZE); // allocate rx buffer
     sfbus_send_frame_v2(fd, address, strlen(cmd), cmd);
     int len = sfbus_recv_frame_wait(fd, 0xFFFF, buffer);
     if (len == 5 && *buffer == (char)0xFF) // expect 0xFF on successful ping
@@ -237,17 +271,19 @@ int sfbus_read_eeprom(int fd, u_int16_t address, char *buffer)
     char *_buffer = malloc(256);
     sfbus_send_frame_v2(fd, address, strlen(cmd), cmd);
     int len = sfbus_recv_frame_wait(fd, 0xFFFF, _buffer);
-    if (len != 10)
+    if (len != 6)
     {
+        free(_buffer);
         log_message(LOG_WARNING, "Invalid data received from 0x%04X! Unexpected package length.", address);
         return -1;
     }
     if (*(_buffer + 5) != (char)0xAA || *(_buffer) != (char)0xAA)
     {
+        free(_buffer);
         log_message(LOG_WARNING, "Invalid data received from 0x%04X! No ACK byte received.", address);
         return -1;
     }
-    memcpy(buffer, _buffer + 1, len - 4);
+    memcpy(buffer, _buffer + 1, len);
     free(_buffer);
     // printf("Read valid data!\n");
     return len;
@@ -273,19 +309,20 @@ int sfbus_write_eeprom(int fd, u_int16_t address, char *wbuffer, char *rbuffer)
     // wait for readback
     char *_buffer = malloc(256);
     int len = sfbus_recv_frame_wait(fd, 0xFFFF, _buffer);
-    if (len != 10)
+    if (len != 6)
     {
+        free(_buffer);
         log_message(LOG_WARNING, "Invalid data received from 0x%04X! Unexpected package length.", address);
         return -1;
     }
     if (*(_buffer + 5) != (char)0xAA || *(_buffer) != (char)0xAA)
     {
+        free(_buffer);
         log_message(LOG_WARNING, "Invalid data received from 0x%04X! No ACK byte received.", address);
         return -1;
     }
-    memcpy(rbuffer, _buffer + 1, len - 4);
+    memcpy(rbuffer, _buffer + 1, len);
     free(_buffer);
-    // printf("Read valid data!\n");
     return len;
 }
 
@@ -337,12 +374,13 @@ int sfbus_display_full(int fd, u_int16_t address, u_int8_t flap)
 u_int8_t sfbus_read_status(int fd, u_int16_t address, double *voltage, u_int32_t *counter)
 {
     char *cmd = "\xF8";
-    char *_buffer = malloc(256);
+    char *_buffer = malloc(SFBUS_MAX_BUFFER_SIZE);
     sfbus_send_frame_v2(fd, address, strlen(cmd), cmd);
 
     int res = sfbus_recv_frame_wait(fd, 0xFFFF, _buffer);
     if (res < 0)
     {
+        free(_buffer);
         return 0xFF;
     }
     u_int16_t _voltage = *(_buffer + 2) & 0xFF | ((*(_buffer + 1) << 8) & 0xFF00);

@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
 
     // parse arguments
     int opt = ' ';
-    char *port, *config_file, *log_level;
+    char *port = NULL, *config_file = NULL, *log_level = NULL;
 
     while ((opt = getopt(argc, argv, "p:c:l:")) != -1) // check options
     {
@@ -64,9 +64,9 @@ int main(int argc, char *argv[])
     if (log_level != NULL) // if log level specified
     {
         if (strlen(log_level) > 0)
-        {                                              // if log level specified
-            long inputLogLevel = strtol("", NULL, 10); // parse log level
-            init_logger(inputLogLevel);                // re-init logger with new level
+        {                                                     // if log level specified
+            long inputLogLevel = strtol(log_level, NULL, 10); // parse log level
+            init_logger(inputLogLevel);                       // re-init logger with new level
         }
     }
 
