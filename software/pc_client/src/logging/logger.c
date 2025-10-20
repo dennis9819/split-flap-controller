@@ -17,18 +17,22 @@
 
 int log_level_global = 4; // set default log level to WARNING
 
-const char *loglevel[] = {"TRACE","DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"};
+const char *loglevel[] = {"\e[0;32mTRACE\e[0m",
+                          "\e[0;36mDEBUG\e[0m",
+                          "\e[0;94mINFO\e[0m",
+                          "\e[0;93mWARNING\e[0m",
+                          "\e[0;91mERROR\e[0m",
+                          "\e[0;95mCRITICAL\e[0m"};
 
 /*
 * Initialize logger with specified log level
 *
 * @param log_level: log level to set
 */
-void init_logger(int log_level) 
+void init_logger(int log_level)
 {
     log_level_global = log_level;
     log_message(LOG_INFO, "Set log level to %s", loglevel[log_level_global]);
-
 }
 
 /*
