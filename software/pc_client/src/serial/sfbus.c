@@ -119,7 +119,6 @@ ssize_t sfbus_recv_frame_wait(int fd, u_int16_t address, char *buffer)
 */
 ssize_t sfbus_recv_frame_v2(int fd, u_int16_t address, char *buffer)
 {
-
     memset(buffer, 0, sizeof(char) * SFBUS_MAX_BUFFER_SIZE); // clear receive buffer
     // wait for start byte
     char byte = 0x00;

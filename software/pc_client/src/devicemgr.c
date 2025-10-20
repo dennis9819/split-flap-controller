@@ -11,6 +11,7 @@
 
 #include "devicemgr.h"
 #include "logging/logger.h"
+#include <ctype.h>
 #include <json-c/json_object.h>
 #include <string.h>
 #include <sys/types.h>
@@ -62,9 +63,9 @@ int deviceFd;                                  // rs485 file descriptor
 struct SFDEVICE devices[SFDEVICE_MAXDEV];      // device array
 
 // symbol table for flap characters
-const char *symbols[45] = {" ", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N",
-                           "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "Ä", "Ö", "Ü",
-                           "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ":", ".", "-", "?", "!"};
+const char *symbols[] = {" ", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N",
+                         "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "Ä", "Ö", "Ü",
+                         "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ":", ".", "-", "?", "!"};
 
 /*
 * Initialize device manager.
@@ -91,12 +92,17 @@ void devicemgr_init(int fd)
 }
 /*
 * Read status from device and store it in device struct
-* Returns 0 on success, -1 on read error, -2 if device not defined
 *
 * @param device_id ID of device to read
+* @return 0 on success, -1 on read error, -2 if device not defined
 */
 int devicemgr_readStatus(int device_id)
 {
+    if (device_id < 0 || device_id >= SFDEVICE_MAXDEV)
+    {
+        log_message(LOG_ERROR, "device id %i out of bounds", device_id);
+        return -2;
+    }
     if (devices[device_id].address > 0)
     { // only if defined
         double _voltage = 0;
@@ -123,6 +129,7 @@ int devicemgr_readStatus(int device_id)
     }
     else
     {
+        log_message(LOG_ERROR, "device id %i not defined", device_id);
         return -2;
     }
 }
@@ -135,14 +142,30 @@ int devicemgr_readStatus(int device_id)
 */
 int devicemgr_readCalib(int device_id)
 {
+    if (device_id < 0 || device_id >= SFDEVICE_MAXDEV)
+    {
+        log_message(LOG_ERROR, "device id %i out of bounds", device_id);
+        return -1;
+    }
+    if (devices[device_id].address == 0)
+    {
+        log_message(LOG_ERROR, "device id %i not defined", device_id);
+        return -1;
+    }
     if (devices[device_id].deviceState == ONLINE)
     {
         char *buffer_r = malloc(SFBUS_MAX_BUFFER_SIZE);
+        if (buffer_r == NULL)
+        {
+            log_message(LOG_ERROR, "Error allocating memory for eeprom read");
+            return -1;
+        }
         if (sfbus_read_eeprom(devices[device_id].rs485_descriptor, devices[device_id].address, buffer_r) > 0)
         {
             uint16_t calib_data = (*(buffer_r + 2) & 0xFF | ((*(buffer_r + 3) << 8) & 0xFF00));
             devices[device_id].calibration = calib_data;
             free(buffer_r);
+            return 0;
         }
         else
         {
@@ -185,6 +208,11 @@ json_object *devicemgr_printMap()
 */
 void devicemgr_printDetails(int device_id, json_object *root)
 {
+    if (device_id < 0 || device_id >= SFDEVICE_MAXDEV)
+    {
+        log_message(LOG_ERROR, "device id %i out of bounds", device_id);
+        return;
+    }
     // generate json object with status
     json_object_object_add(root, "id", json_object_new_int(device_id));
     json_object_object_add(root, "address", json_object_new_int(devices[device_id].address));
@@ -256,8 +284,12 @@ void devicemgr_printDetails(int device_id, json_object *root)
 void devicemgr_printDetailsAll(json_object *root)
 {
     json_object_object_add(root, "devices_all", json_object_new_int(nextFreeSlot + 1));
-    json_object *devices_arr = json_object_new_array();
     int devices_online = 0;
+    if (nextFreeSlot < 0) // no devices registered
+    {
+        return;
+    }
+    json_object *devices_arr = json_object_new_array();
     for (int i = 0; i < (nextFreeSlot + 1); i++)
     {
         if (devices[i].address > 0)
@@ -282,22 +314,35 @@ void devicemgr_printDetailsAll(json_object *root)
 *
 * @param id ID of device to set
 * @param flap character to set
+* @return 0 on success, -1 on error
 */
-void setSingle(int id, char flap)
+int setSingle(int id, char flap)
 {
+    if (id < 0 || id >= SFDEVICE_MAXDEV)
+    {
+        log_message(LOG_ERROR, "device id %i out of bounds", id);
+        return -1;
+    }
+    if (devices[id].address == 0)
+    {
+        log_message(LOG_ERROR, "device id %i not defined", id);
+        return -1;
+    }
     // first convert char to flap id
     char test_char = toupper(flap);
     // printf("find char %c\n", test_char);
-    for (int ix = 0; ix < 45; ix++)
+    for (int ix = 0; ix < sizeof(symbols); ix++)
     {
         if (*symbols[ix] == test_char)
         {
             // printf("match char %i %i %i\n", test_char, *symbols[ix], ix);
             sfbus_display_full(devices[id].rs485_descriptor, devices[id].address, ix);
             devices[id].current_flap = ix;
-            break;
+            return 0;
         }
     }
+    log_message(LOG_WARNING, "character '%c' not found in symbol table", flap);
+    return -1;
 }
 
 /*
@@ -305,11 +350,31 @@ void setSingle(int id, char flap)
 *
 * @param id ID of device to set
 * @param flap flap ID to set
+* @return 0 on success, -1 on error
 */
-void devicemgr_setSingleRaw(int id, int flap)
+int devicemgr_setSingleRaw(int id, int flap)
 {
-    sfbus_display_full(devices[id].rs485_descriptor, devices[id].address, flap);
-    devices[id].current_flap = flap;
+    if (id < 0 || id >= SFDEVICE_MAXDEV)
+    {
+        log_message(LOG_ERROR, "device id %i out of bounds", id);
+        return -1;
+    }
+    if (devices[id].address == 0)
+    {
+        log_message(LOG_ERROR, "device id %i not defined", id);
+        return -1;
+    }
+    if (flap < 0 || flap >= sizeof(symbols) * sizeof(char))
+    {
+        log_message(LOG_ERROR, "flap ID %i out of bounds", flap);
+        return -1;
+    }
+    else
+    {
+        sfbus_display_full(devices[id].rs485_descriptor, devices[id].address, flap);
+        devices[id].current_flap = flap;
+        return 0;
+    }
 }
 
 /*
@@ -321,14 +386,43 @@ void devicemgr_setSingleRaw(int id, int flap)
 */
 void devicemgr_printText(const char *text, int x, int y)
 {
+    if (x < 0 || x >= SFDEVICE_MAX_X || y < 0 || y >= SFDEVICE_MAX_Y)
+    {
+        log_message(LOG_ERROR, "position (%i,%i) out of bounds", x, y);
+        return;
+    }
+    if (text == NULL)
+    {
+        log_message(LOG_ERROR, "text is NULL");
+        return;
+    }
+    if ((x + strlen(text)) > SFDEVICE_MAX_X)
+    {
+        log_message(LOG_WARNING, "text too long to print at position (%i,%i). Will be truncated", x, y);
+        return;
+    }
     for (int i = 0; i < strlen(text); i++)
     {
         int this_id = deviceMap[x + i][y];
-        if (this_id >= 0)
+        if (this_id >= 0 && this_id < SFDEVICE_MAXDEV)
         {
-            log_message(LOG_DEBUG, "print char '%c' to id:%i", *(text + i), devices[this_id].address);
-
-            setSingle(this_id, *(text + i));
+            if (devices[this_id].address == 0)
+            {
+                log_message(LOG_ERROR, "device id %i not defined. Cannot print to device", this_id);
+            }
+            else
+            {
+                log_message(LOG_DEBUG, "print char '%c' to id:%i", *(text + i), devices[this_id].address);
+                setSingle(this_id, *(text + i));
+            }
+        }
+        else
+        {
+            log_message(LOG_WARNING,
+                        "no valid device at position (%i,%i). Cannot print char '%c'",
+                        x + i,
+                        y,
+                        *(text + i));
         }
     }
 }
@@ -342,10 +436,22 @@ void devicemgr_printText(const char *text, int x, int y)
 */
 void devicemgr_printFlap(int flap, int x, int y)
 {
+    if (flap < 0 || flap >= sizeof(symbols))
+    {
+        log_message(LOG_ERROR, "flap ID %i out of bounds", flap);
+        return;
+    }
+    if (x < 0 || x >= SFDEVICE_MAX_X || y < 0 || y >= SFDEVICE_MAX_Y)
+    {
+        log_message(LOG_ERROR, "position (%i,%i) out of bounds", x, y);
+        return;
+    }
     int this_id = deviceMap[x][y];
-    if (this_id >= 0)
+    if (this_id >= 0 && this_id < SFDEVICE_MAXDEV)
     {
         devicemgr_setSingleRaw(this_id, flap);
+    }else{
+        log_message(LOG_ERROR, "device id %i at position (%i,%i) is invalid. cannot print to this location", this_id,x,y);
     }
 }
 
@@ -384,6 +490,21 @@ int devicemgr_register(int rs485_descriptor, u_int16_t address, int x, int y, in
         nid = nextFreeSlot;
     }
     log_message(LOG_INFO, "Register new device with addr %i at (%i,%i) with id %i", address, x, y, nid);
+    if (nid >= SFDEVICE_MAXDEV)
+    {
+        log_message(LOG_ERROR, "Maximum number of devices (%i) exceeded", SFDEVICE_MAXDEV);
+        return -1;
+    }
+    if (x >= SFDEVICE_MAX_X || y >= SFDEVICE_MAX_Y)
+    {
+        log_message(LOG_ERROR, "Device position (%i,%i) out of bounds", x, y);
+        return -1;
+    }
+    if (x < 0 || y < 0)
+    {
+        log_message(LOG_ERROR, "Device position (%i,%i) invalid. Must be greater than 0", x, y);
+        return -1;
+    }
 
     devices[nid].pos_x = x;
     devices[nid].pos_y = y;
@@ -397,15 +518,37 @@ int devicemgr_register(int rs485_descriptor, u_int16_t address, int x, int y, in
     devices[nid].deviceState = NEW;
     devices[nid].powerState = DISABLED;
     // try to reach device
-    devicemgr_readStatus(nid);
-    devicemgr_readCalib(nid);
+    if (devicemgr_readStatus(nid) != 0)
+    {
+        log_message(LOG_WARNING,
+                    "Error reading inital status from device %i at address %i. Skipping initialization",
+                    nid,
+                    address);
+    }
+    else
+    {
+        if (devicemgr_readCalib(nid) != 0)
+        {
+            log_message(LOG_WARNING,
+                        "Error reading inital calibration value for device %i at address %i. Skipping initialization",
+                        nid,
+                        address);
+        }
+    } // can continue without successfull initial read!
     if (deviceMap[x][y] >= 0)
     { // rest old ones
         int old_id = deviceMap[x][y];
         devices[old_id].pos_x = -1;
         devices[old_id].pos_y = -1;
+        log_message(LOG_WARNING,
+                    "Location (%i,%i) already occupied by device id %i. Move old device to (-1,-1)",
+                    x,
+                    y,
+                    old_id);
     }
     deviceMap[x][y] = nid;
+    log_message(LOG_DEBUG, "Assign location (%i,%i) to device id %i.", x, y, nid);
+
     return nid;
 }
 
@@ -438,9 +581,24 @@ int devicemgr_refresh()
 */
 int devicemgr_remove(int id)
 {
-    devices[nextFreeSlot].deviceState = REMOVED;
-    devices[nextFreeSlot].address = 0;
-    devices[nextFreeSlot].rs485_descriptor = -1;
+    log_message(LOG_DEBUG,"Removing device id %i",id);
+    if (id < 0 || id >= SFDEVICE_MAXDEV)
+    {
+        log_message(LOG_ERROR, "device id %i out of bounds", id);
+        return -1;
+    }
+    devices[id].deviceState = REMOVED;
+    devices[id].address = 0;
+    devices[id].rs485_descriptor = -1;
+    if (devices[id].pos_x >= 0 && devices[id].pos_x < SFDEVICE_MAX_X && devices[id].pos_y >= 0 &&
+        devices[id].pos_y < SFDEVICE_MAX_Y)
+    {
+        log_message(LOG_DEBUG, "Removing map entry for id %i at (%i,%i)", id, devices[id].pos_x, devices[id].pos_y);
+        deviceMap[devices[id].pos_x][devices[id].pos_y] = -1;
+        devices[id].pos_x = -1;
+        devices[id].pos_y = -1;
+    }
+
     return 0;
 }
 
@@ -469,11 +627,28 @@ int devicemgr_save(char *file)
 
     const char *data = json_object_to_json_string_ext(root, JSON_C_TO_STRING_PRETTY);
     log_message(LOG_INFO, "store config data to %s\n", file);
+    if (data == NULL)
+    {
+        log_message(LOG_ERROR, "Error parsing JSON to string. Faild saving config");
+        return -1;
+    }
 
     FILE *fptr;
     fptr = fopen(file, "w");
-    fwrite(data, sizeof(char), strlen(data), fptr);
+    if (fptr == NULL) // error opening file
+    {
+        log_message(LOG_ERROR, "Error opening file %s", file);
+        return -1;
+    }
+    if (fwrite(data, sizeof(char), strlen(data), fptr) != strlen(data))
+    {
+        log_message(LOG_ERROR, "Config file write could not be finished. File may be corrupted");
+        fclose(fptr);
+        json_object_put(root); // cleanup json object
+        return -1;
+    }
     fclose(fptr);
+    json_object_put(root); // cleanup json object
     return 0;
 }
 
@@ -488,37 +663,62 @@ int devicemgr_load(char *file)
 {
     FILE *fptr;
     char *line_in_file = malloc(JSON_MAX_LINE_LEN); // maximum of 256 bytes per line;
+    if (line_in_file == NULL)
+    {
+        log_message(LOG_ERROR, "Failed allocating line buffer for config load");
+        return -1;
+    }
 
     log_message(LOG_INFO, "load config data from %s\n", file);
 
-    fptr = fopen(file, "r");
-    json_tokener *tok = json_tokener_new();
+    fptr = fopen(file, "r"); // open file for reading
+    if (fptr == NULL)        // error opening file
+    {
+        log_message(LOG_ERROR, "Error opening file %s", file);
+        return -1;
+    }
+
+    json_tokener *tok = json_tokener_new(); // create new json tokenizer
     json_object *jobj = NULL;
     int stringlen = 0;
     enum json_tokener_error jerr;
 
-    do
+    do // read lines until json is complete
     {
         char *read_ret = fgets(line_in_file, JSON_MAX_LINE_LEN, fptr); // read line from file
+        if (read_ret == NULL || line_in_file == NULL)                  // error reading line
+        {
+            fclose(fptr);           //free file pointer
+            json_tokener_free(tok); //free tokenizer
+            free(line_in_file);     // free line in file buffer
+            log_message(LOG_ERROR, "Error reading line from file %s", file);
+            return -1;
+        }
         stringlen = strlen(line_in_file);
         // printf("Read line with chars: %i : %s", stringlen, line_in_file); // only for testing
         jobj = json_tokener_parse_ex(tok, line_in_file, stringlen);
-        if (read_ret == NULL)
+        if (read_ret == NULL) // end of file reached
         {
             break;
         }
-    } while ((jerr = json_tokener_get_error(tok)) == json_tokener_continue);
-    if (jerr != json_tokener_success)
+    } while ((jerr = json_tokener_get_error(tok)) == json_tokener_continue); // continue until json is complete
+
+    // cleanup
+    fclose(fptr);           //free file pointer
+    json_tokener_free(tok); //free tokenizer
+    free(line_in_file);     // free line in file buffer
+
+    if (jerr != json_tokener_success) // error parsing json
     {
-        free(fptr); //free file pointer
         log_message(LOG_ERROR, "%s", json_tokener_error_desc(jerr));
         // Handle errors, as appropriate for your application.
         return -1;
     }
-
-    // cleanup
-    free(fptr); //free file pointer
-    free(tok);  //free tokenizer
+    if (jobj == NULL)
+    { // verify, json file actually contains valid data
+        log_message(LOG_ERROR, "Error loading config file. JSON Object is NULL");
+        return -1;
+    }
 
     // dump loadad data to terminal ( for tetsting)
     // char *data = json_object_to_json_string_ext(jobj, JSON_C_TO_STRING_PRETTY);
@@ -534,7 +734,7 @@ int devicemgr_load(char *file)
     else
     {
         nextFreeSlot = json_object_get_int(next_free);
-        free(next_free);
+        json_object_put(next_free);
     }
 
     // clear config
@@ -545,6 +745,7 @@ int devicemgr_load(char *file)
     if (!json_object_object_get_ex(jobj, "devices", &devices))
     {
         log_message(LOG_ERROR, "%s", "Key 'devices' not found.");
+        json_object_put(jobj); // free json object
         return -1;
     }
     else
@@ -554,9 +755,10 @@ int devicemgr_load(char *file)
         {
             devicemgr_load_single(json_object_array_get_idx(devices, i));
         }
-
-        free(devices);
     }
+
+    json_object_put(jobj); // free json object
+    return 0;
 }
 
 /*
@@ -571,8 +773,6 @@ int devicemgr_load_single(json_object *device_obj)
     json_object *jid = json_object_object_get(device_obj, "id");
     json_object *jaddr = json_object_object_get(device_obj, "address");
     json_object *jpos = json_object_object_get(device_obj, "position");
-    json_object *jposx = json_object_object_get(jpos, "x");
-    json_object *jposy = json_object_object_get(jpos, "y");
     // verify values are present
     if (jid == NULL)
     {
@@ -581,24 +781,31 @@ int devicemgr_load_single(json_object *device_obj)
     }
     if (jaddr == NULL)
     {
-        log_message(LOG_ERROR, "Error: Key 'address.%s' not found", "id");
+        log_message(LOG_ERROR, "Key 'address.%s' not found", "id");
         return -1;
     }
+    if (jpos == NULL)
+    {
+        log_message(LOG_ERROR, "Key 'device.%s' not found", "position");
+        return -1;
+    }
+    json_object *jposx = json_object_object_get(jpos, "x");
+    json_object *jposy = json_object_object_get(jpos, "y");
     if (jposx == NULL)
     {
-        log_message(LOG_ERROR, "Error: Key 'device.%s' not found", "position.x");
+        log_message(LOG_ERROR, "Key 'device.%s' not found", "position.x");
         return -1;
     }
     if (jposy == NULL)
     {
-        log_message(LOG_ERROR, "Error: Key 'device.%s' not found", "position.y");
+        log_message(LOG_ERROR, "Key 'device.%s' not found", "position.y");
         return -1;
     }
 
     // create device
-    devicemgr_register(deviceFd,
-                       json_object_get_int(jaddr),
-                       json_object_get_int(jposx),
-                       json_object_get_int(jposy),
-                       json_object_get_int(jid));
+    return devicemgr_register(deviceFd,
+                              json_object_get_int(jaddr),
+                              json_object_get_int(jposx),
+                              json_object_get_int(jposy),
+                              json_object_get_int(jid));
 }
