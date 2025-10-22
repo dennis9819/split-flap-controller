@@ -387,6 +387,10 @@ u_int8_t sfbus_read_status(int fd, u_int16_t address, double *voltage, u_int32_t
                          (((*(_buffer + 5) & 0xFF) << 8));
 
     double __voltage = ((double)_voltage / 1024) * 55;
+    if (__voltage > 16)
+    {
+        __voltage = ((double)_voltage / 1024) * 28.16;
+    }
 
     *voltage = __voltage;
     *counter = (u_int32_t)_counter;
