@@ -1,0 +1,53 @@
+.notification-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 9;
+    width: 100%;
+    padding: var(--pico-block-spacing-vertical) var(--pico-block-spacing-horizontal);
+
+}
+
+.notification {
+    width: 100% - var(--pico-block-spacing-horizontal);
+    height: fit-content;
+    margin: var(--pico-spacing);
+    overflow: auto;
+    padding: var(--pico-block-spacing-vertical) var(--pico-block-spacing-horizontal);
+    border-radius: var(--pico-border-radius);
+    box-shadow: var(--pico-card-box-shadow);
+    transition: opacity 1s ease;
+    opacity: 0.0;
+    backdrop-filter: blur(10px);
+}
+
+.notification>p {
+    font-weight: bold;
+    padding-bottom: 0%;
+    margin-bottom: 0;
+}
+
+.notification-success {
+    background: rgb(1, 82, 52);
+}
+
+.notification-success>p {
+    color: rgb(33, 226, 153);
+}
+
+.notification-warn {
+    background: rgb(139, 79, 0);
+}
+
+.notification-warn>p {
+    color: rgb(254, 182, 112);
+}
+
+.notification-error {
+    background: rgb(175, 41, 29);
+}
+
+.notification-error>p {
+    color: rgb(245, 163, 144)
+}

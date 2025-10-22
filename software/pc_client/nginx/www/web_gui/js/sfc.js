@@ -1,46 +1,110 @@
-// Create WebSocket connection.
-let hostname = location.host;
-if (hostname === "") {
-  hostname = "localhost";
-}
-console.log(`Connecting to ws://${hostname}`);
+let socket;
 
-const socket = new WebSocket(`ws://${hostname}/manage/`);
-
-// Connection opened
-socket.addEventListener("open", (event) => {
-  
-});
-
-socket.addEventListener("message", (event) => {
-  switch (last_command) {
-    case "dm_dump":
-      parse_module_conf(JSON.parse(event.data));
-      break;
+/* After Document load, change view according to url and connect to ws server */
+document.addEventListener("DOMContentLoaded", function () {
+  const urlSection = location.href.split("#")[1];
+  if (urlSection) {
+    changeView(urlSection);
   }
+  SFCConnect();
+
 });
 
+/* function to conenct to ws server */
+function SFCConnect() {
+  // Create WebSocket connection.
+  let hostname = location.host;
+  if (hostname === "") {
+    hostname = "localhost";
+  }
+  console.log(`Connecting to ws://${hostname}`);
+
+  socket = new WebSocket(`ws://${hostname}/manage/`);
+  // Connection opened
+  socket.addEventListener("open", (event) => {
+    notify("success", "connected!");
+    load_module_conf();
+  });
+  socket.addEventListener("close", (event) => {
+    notify("warn", "ws connection failed!. Reconnect in 5s");
+    setTimeout(() => {
+      SFCConnect();
+    }, 5000)
+
+  });
+
+  socket.addEventListener("message", (event) => {
+    const data = JSON.parse(event.data)
+    console.log(data)
+
+    switch (last_command) {
+      case "dm_dump":
+        parse_module_conf(data);
+        break;
+    }
+    if (data.ack) {
+      notify("success", "command sent!");
+
+    }
+
+  });
+
+}
+
+/* function to send command */
+function SFCCommandAsync(data) {
+  if (socket && socket.readyState !== WebSocket.CLOSED) {
+    last_command = data.command;
+    socket.send(JSON.stringify(data));
+  } else {
+    notify("error", "ws not connected!");
+  }
+}
+
+/* utility function to format int to hex string */
 function toAddressStr(address) {
   const hexbase = address.toString(16).padStart(4, '0').toUpperCase();
   return `0x${hexbase}`;
 }
 
-// Send command
-function SFCCommandAsync(data) {
-  last_command = data.command;
-  socket.send(JSON.stringify(data));
+let messageCounter = 0;
+function notify(severity, text) {
+  const template = document.querySelector("#notification");
+  const clone = template.content.cloneNode(true);
+  const tbody = document.querySelector("#message_container");
+
+  clone.querySelector("div").classList.add(`notification-${severity}`)
+  clone.querySelector("div").querySelector("p").innerHTML = text;
+  const messageDivID = `notification-dyn-${messageCounter}`
+  clone.querySelector("div").id = messageDivID;
+  messageCounter += 1;
+
+  setTimeout(function () {
+    //document.querySelector(`#${messageDivID}`).style.transition = "opacity 1s ease";
+    document.querySelector(`#${messageDivID}`).style.opacity = 0;
+    setTimeout(function () {
+      document.querySelector(`#${messageDivID}`).remove();
+    }, 1001);
+  }, 2000);
+
+  tbody.appendChild(clone);
+  document.querySelector(`#${messageDivID}`).style.opacity = 0.7;
+
 }
+
 
 function btn_display() {
   const text = document.getElementById("form_display_str").value;
   const x = Number(document.getElementById("form_display_x").value);
   const y = Number(document.getElementById("form_display_y").value);
-
+  const mode = document.getElementById("form_display_mode").value;
+  console.log(mode)
   const msg = {
     "command": "dm_print",
     "string": text,
     "x": x,
-    "y": y
+    "y": y,
+    "full": mode == "false" ? false : true
   }
   SFCCommandAsync(msg);
 }
@@ -60,6 +124,20 @@ function btn_reset_module(address) {
   SFCCommandAsync(msg);
 }
 
+function btn_save() {
+  const msg = {
+    "command": "dm_save",
+  }
+  SFCCommandAsync(msg);
+}
+
+function btn_load() {
+  const msg = {
+    "command": "dm_load",
+  }
+  SFCCommandAsync(msg);
+}
+
 function changeView(id) {
   document.getElementById('view_display').style.display = 'none';
   document.getElementById('view_conf_modules').style.display = 'none';
@@ -72,16 +150,24 @@ function changeView(id) {
       load_module_conf();
       break;
   }
+  // append to url
+  //location.href = "test"
+  const newHref = `${location.href.split("#")[0]}#${id}`;
+  location.href = newHref;
+
+  // close menu
+  document.getElementById('menu_dropdown').removeAttribute('open');
+
 }
 
 let modules = [];
 
 function load_module_conf() {
-  document.getElementById('btn_refresh').ariaBusy = 'true';
-  document.getElementById('btn_refresh').disabled = true;
-
-  SFCCommandAsync({ "command": "dm_dump" });
-
+  if (socket) {
+    document.getElementById('btn_refresh').ariaBusy = 'true';
+    document.getElementById('btn_refresh').disabled = true;
+    SFCCommandAsync({ "command": "dm_dump" });
+  }
 }
 
 function parse_module_conf(data) {
@@ -97,7 +183,7 @@ function parse_module_conf(data) {
 
       const clone = template.content.cloneNode(true);
       let summary = clone.querySelector("summary");
-      summary.textContent = `Module ID ${mod["id"]} : ${mod["status"]["device"]}`;
+      summary.textContent = `Module ${mod["id"]} : ${mod["status"]["device"]} | Addr: ${toAddressStr(mod["address"])} , Pos: (${mod["position"]["x"]}, ${mod["position"]["y"]})`;
       switch (mod["status"]["device"]) {
         case 'ONLINE':
           summary.classList.add("pico-color-jade-500");
@@ -238,16 +324,3 @@ function display_dialog_add_device() {
   }
 }
 
-function btn_save(){
-  const msg = {
-    "command": "dm_save",
-  }
-  SFCCommandAsync(msg);
-}
-
-function btn_load(){
-  const msg = {
-    "command": "dm_load",
-  }
-  SFCCommandAsync(msg);
-}
