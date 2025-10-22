@@ -22,6 +22,15 @@
 #include <termios.h> // Contains POSIX terminal control definitions
 #include <unistd.h>  // write(), read(), close()
 
+#ifndef SFDEFICEMGR_H
+#define SFDEFICEMGR_H
+typedef enum SFDISPLAYMODE
+{
+    DISPLAY_DIRECT,
+    DISPLAY_FULLROTATION
+} sfdisplaymode;
+#endif
+
 int devicemgr_readStatus(int device_id);
 int devicemgr_readCalib(int device_id);
 void devicemgr_printDetails(int device_id, json_object *root);
@@ -31,8 +40,8 @@ void devicemgr_init();
 int devicemgr_print(char *text);
 int devicemgr_refresh();
 int devicemgr_save(char *file);
-void devicemgr_printText(const char *text, int x, int y);
-void devicemgr_printFlap(int flap, int x, int y);
+void devicemgr_printText(const char *text, int x, int y, sfdisplaymode displayMode);
+void devicemgr_printFlap(int flap, int x, int y, sfdisplaymode displayMode);
 int devicemgr_load(char *file);
 int devicemgr_load_single(json_object *device_obj);
 int devicemgr_remove(int id);

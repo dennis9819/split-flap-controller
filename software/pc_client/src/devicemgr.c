@@ -32,7 +32,6 @@ enum SFDEVICE_POWER
     UNKNOWN   // power state unknown (device offline)
 };
 
-
 struct SFDEVICE
 {
     int pos_x;                       // position in matrix
@@ -50,10 +49,11 @@ struct SFDEVICE
 
 enum
 {
-    SFDEVICE_MAXDEV = 128,  // maximum number of devices supported
-    SFDEVICE_MAX_X = 20,    // maximum x size of device matrix
-    SFDEVICE_MAX_Y = 4,     // maximum y size of device matrix
-    JSON_MAX_LINE_LEN = 256 // maximum length of a line in json file
+    SFDEVICE_MAXDEV = 128,   // maximum number of devices supported
+    SFDEVICE_MAX_X = 20,     // maximum x size of device matrix
+    SFDEVICE_MAX_Y = 4,      // maximum y size of device matrix
+    JSON_MAX_LINE_LEN = 256, // maximum length of a line in json file
+    FLAP_COUNT = 45          // amount of installed flaps
 };
 
 
@@ -63,9 +63,9 @@ int deviceFd;                                  // rs485 file descriptor
 struct SFDEVICE devices[SFDEVICE_MAXDEV];      // device array
 
 // symbol table for flap characters
-const char *symbols[] = {" ", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N",
-                         "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "Ä", "Ö", "Ü",
-                         "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ":", ".", "-", "?", "!"};
+const char *symbols[FLAP_COUNT] = {" ", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N",
+                                   "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "Ä", "Ö", "Ü",
+                                   "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ":", ".", "-", "?", "!"};
 
 /*
 * Initialize device manager.
@@ -314,9 +314,10 @@ void devicemgr_printDetailsAll(json_object *root)
 *
 * @param id ID of device to set
 * @param flap character to set
+* @param displayMode do a full rotation
 * @return 0 on success, -1 on error
 */
-int setSingle(int id, char flap)
+int devicemgr_setSingle(int id, char flap, sfdisplaymode displayMode)
 {
     if (id < 0 || id >= SFDEVICE_MAXDEV)
     {
@@ -331,12 +332,24 @@ int setSingle(int id, char flap)
     // first convert char to flap id
     char test_char = toupper(flap);
     // printf("find char %c\n", test_char);
-    for (int ix = 0; ix < sizeof(symbols); ix++)
+    for (int ix = 0; ix < FLAP_COUNT; ix++)
     {
         if (*symbols[ix] == test_char)
         {
             // printf("match char %i %i %i\n", test_char, *symbols[ix], ix);
-            sfbus_display_full(devices[id].rs485_descriptor, devices[id].address, ix);
+            if (displayMode == DISPLAY_DIRECT)
+            {
+                sfbus_display(devices[id].rs485_descriptor, devices[id].address, ix);
+            }
+            else if (displayMode == DISPLAY_FULLROTATION)
+            {
+                sfbus_display_full(devices[id].rs485_descriptor, devices[id].address, ix);
+            }
+            else
+            {
+                log_message(LOG_ERROR, "invalid display mode %i", displayMode);
+                return -1;
+            }
             devices[id].current_flap = ix;
             return 0;
         }
@@ -350,9 +363,10 @@ int setSingle(int id, char flap)
 *
 * @param id ID of device to set
 * @param flap flap ID to set
+* @param displayMode do a full rotation
 * @return 0 on success, -1 on error
 */
-int devicemgr_setSingleRaw(int id, int flap)
+int devicemgr_setSingleRaw(int id, int flap, sfdisplaymode displayMode)
 {
     if (id < 0 || id >= SFDEVICE_MAXDEV)
     {
@@ -364,14 +378,26 @@ int devicemgr_setSingleRaw(int id, int flap)
         log_message(LOG_ERROR, "device id %i not defined", id);
         return -1;
     }
-    if (flap < 0 || flap >= sizeof(symbols) * sizeof(char))
+    if (flap < 0 || flap >= FLAP_COUNT)
     {
         log_message(LOG_ERROR, "flap ID %i out of bounds", flap);
         return -1;
     }
     else
     {
-        sfbus_display_full(devices[id].rs485_descriptor, devices[id].address, flap);
+        if (displayMode == DISPLAY_DIRECT)
+        {
+            sfbus_display(devices[id].rs485_descriptor, devices[id].address, flap);
+        }
+        else if (displayMode == DISPLAY_FULLROTATION)
+        {
+            sfbus_display_full(devices[id].rs485_descriptor, devices[id].address, flap);
+        }
+        else
+        {
+            log_message(LOG_ERROR, "invalid display mode %i", displayMode);
+            return -1;
+        }
         devices[id].current_flap = flap;
         return 0;
     }
@@ -384,7 +410,7 @@ int devicemgr_setSingleRaw(int id, int flap)
 * @param x x position to start printing
 * @param y y position to start printing
 */
-void devicemgr_printText(const char *text, int x, int y)
+void devicemgr_printText(const char *text, int x, int y, sfdisplaymode displayMode)
 {
     if (x < 0 || x >= SFDEVICE_MAX_X || y < 0 || y >= SFDEVICE_MAX_Y)
     {
@@ -413,7 +439,7 @@ void devicemgr_printText(const char *text, int x, int y)
             else
             {
                 log_message(LOG_DEBUG, "print char '%c' to id:%i", *(text + i), devices[this_id].address);
-                setSingle(this_id, *(text + i));
+                devicemgr_setSingle(this_id, *(text + i), displayMode);
             }
         }
         else
@@ -434,9 +460,9 @@ void devicemgr_printText(const char *text, int x, int y)
 * @param x x position to print
 * @param y y position to print
 */
-void devicemgr_printFlap(int flap, int x, int y)
+void devicemgr_printFlap(int flap, int x, int y, sfdisplaymode displayMode)
 {
-    if (flap < 0 || flap >= sizeof(symbols))
+    if (flap < 0 || flap >= FLAP_COUNT)
     {
         log_message(LOG_ERROR, "flap ID %i out of bounds", flap);
         return;
@@ -449,7 +475,7 @@ void devicemgr_printFlap(int flap, int x, int y)
     int this_id = deviceMap[x][y];
     if (this_id >= 0 && this_id < SFDEVICE_MAXDEV)
     {
-        devicemgr_setSingleRaw(this_id, flap);
+        devicemgr_setSingleRaw(this_id, flap, displayMode);
     }
     else
     {
@@ -472,7 +498,7 @@ void devicemgr_clearscreen()
         {
             if (devices[ix].current_flap != 0)
             {
-                devicemgr_setSingleRaw(ix, 0);
+                devicemgr_setSingleRaw(ix, 0, DISPLAY_FULLROTATION);
             }
         }
     }

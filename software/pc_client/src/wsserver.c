@@ -24,9 +24,10 @@ json_object *(*commandparser_func)(json_object *);
 */
 void ws_opencon(ws_cli_conn_t client)
 {
-    char *cli;
+    char *cli, *port;
     cli = ws_getaddress(client);
-    log_message(LOG_DEBUG, "WebSocket connection opened, addr: %s", cli);
+    port = ws_getport(client);
+    log_message(LOG_DEBUG, "WebSocket connection opened, addr: %s, port: %s", cli, port);
 }
 
 /*
@@ -35,9 +36,10 @@ void ws_opencon(ws_cli_conn_t client)
 */
 void ws_closecon(ws_cli_conn_t client)
 {
-    char *cli;
+ char *cli, *port;
     cli = ws_getaddress(client);
-    log_message(LOG_DEBUG, "WebSocket connection closed, addr: %s", cli);
+    port = ws_getport(client);
+    log_message(LOG_DEBUG, "WebSocket connection closed, addr: %s, port: %s", cli, port);
 }
 
 /*
@@ -55,7 +57,7 @@ void ws_messagehandler(ws_cli_conn_t client, const unsigned char *msg, uint64_t 
     log_message(LOG_DEBUG, "WebSocket received message: %s (%zu), from: %s", msg, size, cli);
 
     json_tokener *tok = json_tokener_new();
-    json_object *req = json_tokener_parse_ex(tok, (const char*)msg, size);
+    json_object *req = json_tokener_parse_ex(tok, (const char *)msg, size);
     enum json_tokener_error jerr;
     jerr = json_tokener_get_error(tok);
     if (jerr != json_tokener_success)
@@ -118,6 +120,18 @@ void send_json_error(ws_cli_conn_t client, char *error, const char *detail)
     send_json_response(client, root);
 }
 
+/*
+* send json hisotry to all websocket clients
+* 
+* @param msg: message
+*/
+void send_json_history(json_object *msg)
+{
+    json_object *root = json_object_new_object();
+    json_object_object_add(root, "history", root);
+    const char *message = json_object_to_json_string_ext(root, JSON_C_TO_STRING_PRETTY);
+    ws_sendframe_txt_bcast(-1, message);
+}
 /* 
 * Start websocket server
 *

@@ -21,6 +21,7 @@ int start_webserver();
 
 void send_json_error(ws_cli_conn_t client, char *error, const char *detail);
 void send_json_response(ws_cli_conn_t client, json_object *res);
+void send_json_history(json_object *msg);
 
 void ws_messagehandler(ws_cli_conn_t client, const unsigned char *msg, uint64_t size, int type);
 void ws_opencon(ws_cli_conn_t client);

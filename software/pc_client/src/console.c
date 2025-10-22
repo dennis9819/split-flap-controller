@@ -177,7 +177,7 @@ void cmd_dm_load(json_object *req, json_object *res)
 * command: dm_print
 * description: print text to display at position (x,y)
 *
-* request format: { "command": "dm_print", "x": <x>, "y": <y>, "string": <text> }
+* request format: { "command": "dm_print", "x": <x>, "y": <y>, "string": <text>, "full": <true/false> }
 * response format: { "ack": true }
 *
 * @param req: json request object
@@ -188,6 +188,7 @@ void cmd_dm_print(json_object *req, json_object *res)
     json_object *jx = json_object_object_get(req, "x");
     json_object *jy = json_object_object_get(req, "y");
     json_object *jstr = json_object_object_get(req, "string");
+    json_object *jfullrot = json_object_object_get(req, "full");
     if (jx == NULL)
     {
         json_object_object_add(res, "error", json_object_new_string("format error"));
@@ -208,8 +209,21 @@ void cmd_dm_print(json_object *req, json_object *res)
         int x = json_object_get_int(jx);
         int y = json_object_get_int(jy);
         const char *str = json_object_get_string(jstr);
-        devicemgr_printText(str, x, y);
+        if (jfullrot == NULL)
+        {
+            devicemgr_printText(str, x, y, DISPLAY_FULLROTATION);
+        }
+        else if (json_object_get_boolean(jfullrot) == false)
+        {
+            devicemgr_printText(str, x, y, DISPLAY_DIRECT);
+        }
+        else
+        {
+            devicemgr_printText(str, x, y, DISPLAY_FULLROTATION);
+        }
+
         json_object_object_add(res, "ack", json_object_new_boolean(true));
+        send_json_history(req);
     }
 }
 
@@ -217,7 +231,7 @@ void cmd_dm_print(json_object *req, json_object *res)
 * command: dm_print_single
 * description: print single flap to display at position (x,y)
 *
-* request format: { "command": "dm_print_single", "x": <x>, "y": <y>, "flap": <flap_id> }
+* request format: { "command": "dm_print_single", "x": <x>, "y": <y>, "flap": <flap_id>, "full": <true/false> }
 * response format: { "ack": true }
 *
 * @param req: json request object
@@ -228,6 +242,7 @@ void cmd_dm_print_single(json_object *req, json_object *res)
     json_object *jx = json_object_object_get(req, "x");
     json_object *jy = json_object_object_get(req, "y");
     json_object *jflap = json_object_object_get(req, "flap");
+    json_object *jfullrot = json_object_object_get(req, "full");
     if (jx == NULL)
     {
         json_object_object_add(res, "error", json_object_new_string("format error"));
@@ -248,8 +263,18 @@ void cmd_dm_print_single(json_object *req, json_object *res)
         int x = json_object_get_int(jx);
         int y = json_object_get_int(jy);
         int flap = json_object_get_int(jflap);
-
-        devicemgr_printFlap(flap, x, y);
+        if (jfullrot == NULL)
+        {
+            devicemgr_printFlap(flap, x, y, DISPLAY_FULLROTATION);
+        }
+        else if (json_object_get_boolean(jfullrot) == false)
+        {
+            devicemgr_printFlap(flap, x, y, DISPLAY_DIRECT);
+        }
+        else
+        {
+            devicemgr_printFlap(flap, x, y, DISPLAY_FULLROTATION);
+        }
         json_object_object_add(res, "ack", json_object_new_boolean(true));
     }
 }
