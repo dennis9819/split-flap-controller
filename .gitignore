@@ -1,8 +1,11 @@
 software/firmware_module/module_rev0/build/*
 software/firmware_module/module_rev0/build
+software/firmware_module/module_rev3/build/*
+software/firmware_module/module_rev3/build
 software/pc_client/build/*
 software/pc_client/build
 hardware/module_controller/ModuleController-backups/*
 hardware/module_controller/ModuleController-backups
 hardware/module_controller/~*.lck
 software/pc_client/*.json
+software/firmware_module/module_rev3/eeprom.hex
