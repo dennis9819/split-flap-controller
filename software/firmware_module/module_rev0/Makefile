@@ -22,6 +22,7 @@ CC=avr-gcc
 PROJ_NAME=sflap_controller_fw
 PROJ_BLD=$(BUILD_DIR)/$(PROJ_NAME)
 
+TEMP_EEPROM_DUMP=eeprom.hex
 # Rules
 
 all: $(PROJ_BLD).elf
@@ -42,13 +43,24 @@ release: $(PROJ_BLD).elf
 fuse:
 	avrdude -c $(PROG_STR) -p $(MCU) -U lfuse:w:0xDF:m  -U hfuse:w:0xCA:m -B 125kHz
 
-flash:
+flash-clean:
 	avrdude -c $(PROG_STR) -p $(MCU) -U flash:w:$(PROJ_BLD).hex:i
+
+flash-update:
+	avrdude -c $(PROG_STR) -p $(MCU) -U eeprom:r:$(TEMP_EEPROM_DUMP):i
+	avrdude -c $(PROG_STR) -p $(MCU) -U flash:w:$(PROJ_BLD).hex:i
+	avrdude -c $(PROG_STR) -p $(MCU) -U eeprom:w:$(TEMP_EEPROM_DUMP):i
+
+clear-address:
+	avrdude -c $(PROG_STR) -p $(MCU) -U eeprom:r:$(TEMP_EEPROM_DUMP):i
+	sed -i 's/:20000000..../:200000000000/' $(TEMP_EEPROM_DUMP)
+	avrdude -c $(PROG_STR) -p $(MCU) -U eeprom:w:$(TEMP_EEPROM_DUMP):i
 
 flash-debug:
 	avrdude -c $(PROG_STR) -p $(MCU) -U flash:w:$(PROJ_BLD).elf:e
 
 clean:
 	rm -rf build
+	rm $(TEMP_EEPROM_DUMP)
 
 .PHONY = clean, release, flash, flash-debug
