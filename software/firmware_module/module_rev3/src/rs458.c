@@ -12,9 +12,9 @@
 void rs485_init()
 {
     // init I/O
-    DDRD &= ~(1 << PD0);                          // BUS_DIR & TX is OUTPUT
+    DDRD &= ~(1 << PD0);                          // RX is INPUT
     DDRD |= (1 << PD3) | (1 << PD2) | (1 << PD1); // BUS_DIR & TX is OUTPUT
-    PORTD &= 0x07;                                // clear PD0-PD4
+    PORTD &= 0xE0;                                // clear PD0-PD4
     // init UART
     UBRRH = (BAUDRATE >> 8);
     UBRRL = BAUDRATE;                                    // set baud rate

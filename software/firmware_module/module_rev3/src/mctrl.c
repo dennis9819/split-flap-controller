@@ -173,7 +173,7 @@ ISR(TIMER1_COMPA_vect)
                 absolute_pos -= STEPS_PER_REV;
             }
             // detect home position
-            if ((PIND & (1 << PD3)) == 0)
+            if ((PIND & (1 << PD4)) == 0)
             {
                 if (lastSens == 0)
                 {
