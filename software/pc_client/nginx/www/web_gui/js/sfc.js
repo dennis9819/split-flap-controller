@@ -280,10 +280,11 @@ function display_dialog_change_address() {
   const dialog = document.getElementById("change_address");
   dialog.showModal();
   const dialog_el = dialog.querySelector("article").querySelector("section").querySelector("footer");
-  const addr_old = Number(dialog.querySelector("#form_change_address_old").value);
-  const addr_new = Number(dialog.querySelector("#form_change_address_new").value);
+
 
   dialog_el.querySelector(".btn_confirm").onclick = function () {
+    const addr_old = Number(dialog.querySelector("#form_change_address_old").value);
+    const addr_new = Number(dialog.querySelector("#form_change_address_new").value);
     const msg = {
       "command": "dr_setaddress",
       "address": addr_old,

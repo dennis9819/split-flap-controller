@@ -68,6 +68,26 @@ of the license in the project repository or at <https://www.gnu.org/licenses/agp
         </article>
     </dialog>
 
+    <dialog id="dialog_change_calibration">
+        <article>
+            <h2>Change calibration</h2>
+            <section>
+                <form id="form_change_calibration">
+                    <label>
+                        New calibration data (default 1400):
+                        <input id="form_change_calibration_data" name="calibration" type="number"
+                            placeholder="Calibration Value" value="1400" />
+                    </label>
+                </form>
+                <footer>
+                    <button class="secondary btn_cancel">
+                        Cancel
+                    </button>
+                    <button class="btn_confirm">Confirm</button>
+                </footer>
+        </article>
+    </dialog>
+
     <main class="container">
         <div id="message_container" style="width: 100%;" class="notification-container">
             <template id="notification">
