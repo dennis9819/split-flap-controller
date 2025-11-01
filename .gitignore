@@ -10,3 +10,10 @@ hardware/module_controller/~*.lck
 software/pc_client/*.json
 software/firmware_module/module_rev3/eeprom.hex
 software/firmware_module/module_rev0/eeprom.hex
+cad/Schematics/module_controller/ModuleController-backups/*
+cad/Schematics/splitflap-backplane/splitflap-backplane-backups/s*
+*.lck
+*autosave*
+*auto_save*
+*cache*
+
