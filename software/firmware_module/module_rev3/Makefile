@@ -44,12 +44,17 @@ fuse:
 	avrdude -c $(PROG_STR) -p $(MCU) -U lfuse:w:0xDF:m  -U hfuse:w:0xCA:m -B 125kHz
 
 flash-clean:
+	avrdude -c $(PROG_STR) -p $(MCU) -U eeprom:r:$(TEMP_EEPROM_DUMP):i
 	avrdude -c $(PROG_STR) -p $(MCU) -U flash:w:$(PROJ_BLD).hex:i
 
 flash-update:
 	avrdude -c $(PROG_STR) -p $(MCU) -U eeprom:r:$(TEMP_EEPROM_DUMP):i
 	avrdude -c $(PROG_STR) -p $(MCU) -U flash:w:$(PROJ_BLD).hex:i
 	avrdude -c $(PROG_STR) -p $(MCU) -U eeprom:w:$(TEMP_EEPROM_DUMP):i
+
+flash-eeprom:
+	avrdude -c $(PROG_STR) -p $(MCU) -U eeprom:w:$(TEMP_EEPROM_DUMP):i
+
 
 clear-address:
 	avrdude -c $(PROG_STR) -p $(MCU) -U eeprom:r:$(TEMP_EEPROM_DUMP):i

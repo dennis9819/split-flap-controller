@@ -9,3 +9,4 @@ hardware/module_controller/ModuleController-backups
 hardware/module_controller/~*.lck
 software/pc_client/*.json
 software/firmware_module/module_rev3/eeprom.hex
+software/firmware_module/module_rev0/eeprom.hex
