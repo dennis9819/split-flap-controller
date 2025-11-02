@@ -13,7 +13,7 @@ void rs485_init()
 {
     // init I/O
     DDRD &= ~(1 << PD0);                          // RX is INPUT
-    DDRD |= (1 << PD3) | (1 << PD2) | (1 << PD1); // BUS_DIR & TX is OUTPUT
+    DDRD |= (1 << PIN_RS485_RXE) | (1 << PIN_RS485_TXE) | (1 << PD1); // BUS_DIR & TX is OUTPUT
     PORTD &= 0xE0;                                // clear PD0-PD4
     // init UART
     UBRRH = (BAUDRATE >> 8);
@@ -25,7 +25,7 @@ void rs485_init()
 // send byte over rs485
 void rs485_send_c(char data)
 {
-    PORTD |= (1 << PD2) | (1 << PD3); // set transciever to transmitt
+    PORTD |= (1 << PIN_RS485_TXE) | (1 << PIN_RS485_RXE); // set transciever to transmitt
     while (!(UCSRA & (1 << UDRE)))
         ;               // wait until buffer is empty
     UCSRA = (1 << TXC); // clear transmit Complete bit
@@ -33,7 +33,7 @@ void rs485_send_c(char data)
     while (!(UCSRA & (1 << TXC)))
     {
     }; // wait until transmitt complete
-    PORTD &= ~((1 << PD2) | (1 << PD3)); // set transciever back to receive
+    PORTD &= ~((1 << PIN_RS485_TXE) | (1 << PIN_RS485_RXE)); // set transciever back to receive
 }
 
 // receive without timeout

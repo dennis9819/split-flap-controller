@@ -44,7 +44,8 @@
 #define CMDB_PING (uint8_t)0xFE    // Ping
 #define CMDB_RESET (uint8_t)0x30   // Reset device
 #define CMDB_PWRON (uint8_t)0x21   // Power motor on
-#define CMDB_RPWROFF (uint8_t)0x20 // Poer motor off
+#define CMDB_RPWROFF (uint8_t)0x20 // Power motor off
+#define CMDB_GVER (uint8_t)0xF9    // Get Firmware Version
 
 // Command Responses
 #define CMDR_ERR_INVALID 0xEE // Invalid command
@@ -56,3 +57,32 @@
 #define SHIFT_1B 8
 #define SHIFT_2B 16
 #define SHIFT_3B 24
+
+// Firmware Version
+#define FVER_SEMVER_MINOR 0
+#define FVER_SEMVER_PATCH 0
+
+// Hardware Config
+#if BOARD_REV == 1
+
+#define PIN_SENSE PD3
+#define PIN_RS485_TXE PD2
+#define PIN_RS485_RXE PD2
+#define FVER_SEMVER_MAJOR 1
+#define MOTOR_DIR 0
+
+
+#elif BOARD_REV == 2
+
+#define PIN_SENSE PD4
+#define PIN_RS485_TXE PD2
+#define PIN_RS485_RXE PD3
+#define FVER_SEMVER_MAJOR 2
+#define MOTOR_DIR 1
+
+#else
+
+#define FVER_SEMVER_MAJOR 0
+#error "BOARD_REV not specified!"
+
+#endif

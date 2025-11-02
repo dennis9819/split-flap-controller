@@ -1,7 +1,8 @@
 # Source and include
 BUILD_DIR=build
 SRCS=$(wildcard src/*.c)
-OBJS=$(SRCS:%.c=build/%.o)
+OBJS_REV1=$(SRCS:%.c=build/rev1/%.o)
+OBJS_REV2=$(SRCS:%.c=build/rev2/%.o)
 INC=-I ./inc
 
 # MCU configuration
@@ -10,9 +11,12 @@ MCU=atmega8
 CLOCK_FREQ=16000000
 PROG_STR=usbasp
 
+BOARD_REVISION=1
+
 # Compiler flags
 CFLAGS=-std=c11 -Wall -Wextra -Werror -mmcu=$(MCU) -DF_CPU=$(CLOCK_FREQ)
-OPT_FLAGS=-O3 -g -DDEBUG
+OPT_FLAGS_REV1=-O3 -g -DDEBUG -DBOARD_REV=1
+OPT_FLAGS_REV2=-O3 -g -DDEBUG -DBOARD_REV=2
 
 # Compiler and utility tools
 OBJCOPY=avr-objcopy
@@ -20,31 +24,52 @@ CC=avr-gcc
 
 # Project configuration
 PROJ_NAME=sflap_controller_fw
-PROJ_BLD=$(BUILD_DIR)/$(PROJ_NAME)
+PROJ_BLD_REV1=$(BUILD_DIR)/$(PROJ_NAME)_rev1
+PROJ_BLD_REV2=$(BUILD_DIR)/$(PROJ_NAME)_rev2
 
 TEMP_EEPROM_DUMP=eeprom.hex
+
+
+ifeq ($(REV),1)
+	PROJ_BLD=$(PROJ_BLD_REV1)
+else
+	ifeq ($(REV),2)
+		PROJ_BLD=$(PROJ_BLD_REV2)
+	endif
+endif
+
 # Rules
 
-all: $(PROJ_BLD).elf
+# Build firmware for both revisions
+all: $(PROJ_BLD_REV1).elf $(PROJ_BLD_REV2).elf 
 
-$(PROJ_BLD).elf: $(OBJS)
-	$(CC) -o $@ $^ $(INC) $(CFLAGS) $(OPT_FLAGS) $(MCU_FLAGS)
-	$(OBJCOPY) -j .text -j .data -O ihex $@ $(PROJ_BLD).hex
-	$(OBJCOPY) -j .text -j .data -O binary $@ $(PROJ_BLD).bin
+$(PROJ_BLD_REV1).elf: $(OBJS_REV1)
+	$(CC) -o $@ $^ $(INC) $(CFLAGS) $(OPT_FLAGS_REV1) $(MCU_FLAGS)
+	$(OBJCOPY) -j .text -j .data -O ihex $@ $(PROJ_BLD_REV1).hex
+	$(OBJCOPY) -j .text -j .data -O binary $@ $(PROJ_BLD_REV1).bin
+
+$(PROJ_BLD_REV2).elf: $(OBJS_REV2)
+	$(CC) -o $@ $^ $(INC) $(CFLAGS) $(OPT_FLAGS_REV2) $(MCU_FLAGS)
+	$(OBJCOPY) -j .text -j .data -O ihex $@ $(PROJ_BLD_REV2).hex
+	$(OBJCOPY) -j .text -j .data -O binary $@ $(PROJ_BLD_REV2).bin
+
+build/rev1/%.o: %.c
+	mkdir -p build/rev1/src
+	$(CC) -c -o $@ $(INC) $(CFLAGS) $(OPT_FLAGS_REV1) $(MCU_FLAGS) $<
+build/rev2/%.o: %.c
+	mkdir -p build/rev2/src
+	$(CC) -c -o $@ $(INC) $(CFLAGS) $(OPT_FLAGS_REV2) $(MCU_FLAGS) $<
 
 
-build/%.o: %.c
-	mkdir -p build/src
-	$(CC) -c -o $@ $(INC) $(CFLAGS) $(OPT_FLAGS) $(MCU_FLAGS) $<
 
 release: OPT_FLAGS=-O2 -DNDEBUG
-release: $(PROJ_BLD).elf
+release: $(PROJ_BLD_REV1).elf $(PROJ_BLD_REV2).elf
 
 fuse:
 	avrdude -c $(PROG_STR) -p $(MCU) -U lfuse:w:0xDF:m  -U hfuse:w:0xCA:m -B 125kHz
 
 flash-clean:
-	avrdude -c $(PROG_STR) -p $(MCU) -U eeprom:r:$(TEMP_EEPROM_DUMP):i
+	#avrdude -c $(PROG_STR) -p $(MCU) -U eeprom:r:$(TEMP_EEPROM_DUMP):i
 	avrdude -c $(PROG_STR) -p $(MCU) -U flash:w:$(PROJ_BLD).hex:i
 
 flash-update:

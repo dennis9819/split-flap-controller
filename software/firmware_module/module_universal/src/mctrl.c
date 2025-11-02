@@ -10,12 +10,21 @@
 #include "mctrl.h"
 
 // Motor driver steps definition. Reverse for direction change.
+#if MOTOR_DIR == 1
 uint8_t motor_steps[4] = {
     0b00001000,
     0b00000100,
     0b00000010,
     0b00000001,
 };
+#elif MOTOR_DIR == 0
+uint8_t motor_steps[4] = {
+    0b00000001,
+    0b00000010,
+    0b00000100,
+    0b00001000,
+};
+#endif
 
 uint8_t step_index = 0;             // current index in motor_steps
 uint8_t target_flap = 0;            // target flap
@@ -59,8 +68,8 @@ void mctrl_init(int cal_offset)
     DDRC = 0x0F;  // set all pins as outputs
     PORTC = 0x00; // set all to LOW
 
-    DDRD &= ~(1 << PD4); // PD4 is input
-    PORTD |= (1 << PD4); // PD4 pullup
+    DDRD &= ~(1 << PIN_SENSE); // PIN_SENSE is input
+    PORTD |= (1 << PIN_SENSE); // PIN_SENSE pullup
 
     // setup adc
     ADMUX = 0xC7;                                      // Internal Vref at 2.56V, ADC7
@@ -124,7 +133,7 @@ ISR(TIMER1_COMPA_vect)
     }
     else if (homing == 1)
     { // Homing procedure 1. step: move out of home
-        if ((PIND & (1 << PD4)) > 0)
+        if ((PIND & (1 << PIN_SENSE)) > 0)
         {
             homing = 2;
         }
@@ -136,7 +145,7 @@ ISR(TIMER1_COMPA_vect)
     else if (homing == 2)
     { // Homing procedure 2. step: find magnet
         mctrl_step();
-        if ((PIND & (1 << PD4)) == 0)
+        if ((PIND & (1 << PIN_SENSE)) == 0)
         {
             homing = 3;
             steps_since_home = 0;
@@ -173,7 +182,7 @@ ISR(TIMER1_COMPA_vect)
                 absolute_pos -= STEPS_PER_REV;
             }
             // detect home position
-            if ((PIND & (1 << PD4)) == 0)
+            if ((PIND & (1 << PIN_SENSE)) == 0)
             {
                 if (lastSens == 0)
                 {
@@ -242,7 +251,7 @@ uint8_t getSts()
     status |= sts_flag_pwrdwn << 4;        // bit 4: device powered down
     status |= sts_flag_failsafe << 5;      // bit 5: failsafe active
     status |= sts_flag_busy << 6;          // bit 6: device busy
-    if ((PIND & (1 << PD4)) == 0)
+    if ((PIND & (1 << PIN_SENSE)) == 0)
     {
         status |= (1 << 3);
     }
