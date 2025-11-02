@@ -3853,7 +3853,7 @@
 		)
 		(uuid "d4ad40f1-a091-4ef5-bcba-4ed8103766e5")
 	)
-	(text "It is VERY important to \nuse A1101LLHLX. Other\nVariants require a stronger\nmagnetic field and won't\nwork!"
+	(text "It is VERY important to \nuse A1101LLHL*. Other\nVariants require a stronger\nmagnetic field and won't\nwork!"
 		(exclude_from_sim no)
 		(at 63.246 140.208 0)
 		(effects
