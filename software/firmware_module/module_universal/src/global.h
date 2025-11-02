@@ -59,7 +59,7 @@
 #define SHIFT_3B 24
 
 // Firmware Version
-#define FVER_SEMVER_MINOR 0
+#define FVER_SEMVER_MINOR 1
 #define FVER_SEMVER_PATCH 0
 
 // Hardware Config
