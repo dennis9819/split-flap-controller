@@ -82,7 +82,11 @@
 
 #else
 
+#define PIN_SENSE PD3
+#define PIN_RS485_TXE PD2
+#define PIN_RS485_RXE PD2
 #define FVER_SEMVER_MAJOR 0
-#error "BOARD_REV not specified!"
+#define MOTOR_DIR 0
+#warning "BOARD_REV not specified!"
 
 #endif
