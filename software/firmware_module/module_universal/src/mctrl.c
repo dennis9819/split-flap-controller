@@ -26,17 +26,17 @@ uint8_t motor_steps[4] = {
 };
 #endif
 
-uint8_t step_index = 0;             // current index in motor_steps
-uint8_t target_flap = 0;            // target flap
-uint16_t absolute_pos = 0;          // absolute position in steps
-uint16_t steps_since_home = 0;      // steps since last home signal
+uint8_t step_index = 0;        // current index in motor_steps
+uint8_t target_flap = 0;       // target flap
+uint16_t absolute_pos = 0;     // absolute position in steps
+uint16_t steps_since_home = 0; // steps since last home signal
 
 // homing util variables
 uint8_t homing = 0;   // current homing step
 uint8_t lastSens = 0; // home sonsor signal from last tick
 
 // counter for auto powersaving
-uint8_t ticksSinceMove = 0;
+uint16_t ticksSinceMove = 0;
 
 // value to goto after the current is reached. 255 = NONE.
 uint8_t afterRotation = STEPS_AFTERROT;
@@ -60,9 +60,12 @@ int STEPS_OFFSET = 0;
 // initialize motor controller
 void mctrl_init(int cal_offset)
 {
-    if (cal_offset < 800){
+    if (cal_offset < 800)
+    {
         STEPS_OFFSET = STEPS_OFFSET_DEF;
-    }else{
+    }
+    else
+    {
         STEPS_OFFSET = cal_offset;
     }
     DDRC = 0x0F;  // set all pins as outputs
@@ -83,9 +86,9 @@ void mctrl_init(int cal_offset)
 
     // setup timer for ISR
     TCCR1A = 0;
-    TCCR1B = (1 << WGM12) | (1 << CS11) | (1 << CS10); // CTC und Prescaler 64
-    OCR1A = MISR_OCR1A;
-    TIMSK = 1 << OCIE1A; // Timerinterrupts aktivieren
+    TCCR1B = (1 << WGM12) | (1 << CS11) | (1 << CS10); // CTC und Prescaler 64 (CLK=250kHz)
+    OCR1A = MISR_OCR1A;                                // Equals roughly 431Hz (23.2ms Intervall)
+    TIMSK = 1 << OCIE1A;                               // Timerinterrupts aktivieren
     homing = 1;
     delta_err = malloc(ERROR_DATASETS * sizeof(uint16_t));
     _delay_ms(MDELAY_STARTUP);
@@ -119,7 +122,7 @@ void readVoltage()
 // MAIN service routine. Called by timer 1
 ISR(TIMER1_COMPA_vect)
 {
-    timer_ticks ++;
+    timer_ticks++;
     readVoltage(); // read and check voltage
     if (sts_flag_pwrdwn == 1 || sts_flag_failsafe == 1)
     {
@@ -158,7 +161,7 @@ ISR(TIMER1_COMPA_vect)
         if (absolute_pos <= 0)
         {
             homing = 0;
-            absolute_pos = STEPS_OFFSET;    // set correct position again
+            absolute_pos = STEPS_OFFSET; // set correct position again
         }
         mctrl_step();
         absolute_pos--;
@@ -174,7 +177,6 @@ ISR(TIMER1_COMPA_vect)
         if (absolute_pos != target_pos)
         {
             // if target position is not reached, move motor
-            ticksSinceMove = 0;
             mctrl_step();
             absolute_pos++;
             if (absolute_pos >= STEPS_PER_REV)
@@ -213,18 +215,18 @@ ISR(TIMER1_COMPA_vect)
             else if (ticksSinceMove < 2)
             { // if motor has not been moved
                 sts_flag_busy = 0;
-            }
-            else if (ticksSinceMove < MPWRSVG_TICKSTOP)
-            { // if motor has not been moved
                 ticksSinceMove++;
             }
-            else
-            {   // power off after 50 ticks
-                // PORTC = 0x00; // turn off stepper
+            else if (ticksSinceMove > MPWRSVG_TICKSTOP)
+            { // power off after MPWRSVG_TICKSTOP ticks
+                PORTC = 0x00; // turn off stepper
+            }else{
+                ticksSinceMove++;
             }
         }
     }
     rc_tick(); // process counter tick, non-blocking
+
 }
 
 // TODO
@@ -305,6 +307,7 @@ void mctrl_step()
 {
     step_index++;
     steps_since_home++;
+    ticksSinceMove = 0;
     if (step_index > 3)
     {
         step_index = 0;
