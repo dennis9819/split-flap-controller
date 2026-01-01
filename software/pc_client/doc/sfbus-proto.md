@@ -91,12 +91,6 @@ Write address and calibration configuration to internal non-volatile memory.
 ### Get controller status
 - Payload `0xF8`
 - Response is 7 bytes long.
-
-### Get controller firmware version
-- Payload `0xF9`
-- Response is 3 bytes long: `<major> <minor> <patch>`.
-
-
 ```
 +--------+------------+------------+
 | Byte 0 | Byte 1 - 2 | Byte 3 - 6 |
@@ -118,6 +112,11 @@ Write address and calibration configuration to internal non-volatile memory.
         Bit 6:  device busy. Device is currently moving to the next flap position
 
 ```
+
+### Get controller firmware version
+- Payload `0xF9`
+- Response is 3 bytes long: `<major> <minor> <patch>`.
+
 
 ## EEPROM format
 ```
