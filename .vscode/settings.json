@@ -90,7 +90,9 @@
     "unistd.h": "c",
     "string.h": "c",
     "ftdi485.h": "c",
-    "logger.h": "c"
+    "logger.h": "c",
+    "chrono": "c",
+    "random": "c"
   },
   "C_Cpp.errorSquiggles": "enabled"
 }
