@@ -17,7 +17,7 @@ of the license in the project repository or at <https://www.gnu.org/licenses/agp
     <link rel="stylesheet" href="css/pico.min.css">
     <link rel="stylesheet" href="css/sfc.css">
     <script type="text/javascript" src="js/sfc.js"></script>
-    <title>Hello world!</title>
+    <title>SplitFlap Controller!</title>
 </head>
 
 <body>
@@ -147,6 +147,33 @@ of the license in the project repository or at <https://www.gnu.org/licenses/agp
 
                 <input type="button" onClick="btn_display()" value="Display" />
                 <input type="button" onClick="btn_clear()" value="Clear screen" />
+
+                <div role="group">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th scope="col">Text</th>
+                                <th scope="col">Position</th>
+                                <th scope="col">Mode</th>
+                                <th scope="col"></th>
+                            </tr>
+                        </thead>
+                        <template id="recall_list_template">
+                            <tr>
+                                <td class="recall_text">Hello</td>
+                                <td class="recall_position">0,0</td>
+                                <td class="recall_mode">Full Rotation</td>
+                                <td>
+                                    <input type="button" class="btn_recall_display" value="Display" />
+                                    <input type="button" class="btn_recall_load" value="Recall" />
+                                </td>
+                            </tr>
+                        </template>
+                        <tbody id="recall_list">
+                           
+                        </tbody>
+                    </table>
+                </div>
             </form>
         </div>
         <div id="view_conf_modules" style="display: none;">
@@ -215,6 +242,11 @@ of the license in the project repository or at <https://www.gnu.org/licenses/agp
                             </tr>
                             <tr>
                                 <th scope="row">Error flags</th>
+                                <td>-</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Firmware</th>
                                 <td>-</td>
                                 <td></td>
                             </tr>

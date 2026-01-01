@@ -1,5 +1,7 @@
 let socket;
 
+let recall_buffer = [];
+
 /* After Document load, change view according to url and connect to ws server */
 document.addEventListener("DOMContentLoaded", function () {
   const urlSection = location.href.split("#")[1];
@@ -92,6 +94,38 @@ function notify(severity, text) {
 
 }
 
+function push_recall_history(data) {
+  recall_buffer.push(data);
+
+  const tbody = document.querySelector("#recall_list");
+  tbody.innerHTML = "";
+  const template = document.querySelector("#recall_list_template");
+
+  for (let i = recall_buffer.length - 1; i >= 0; i--) {
+    const item = recall_buffer[i];
+    const clone = template.content.cloneNode(true);
+    let td = clone.querySelectorAll("td");
+    td[0].textContent = item["string"];
+    td[1].textContent = `${item["x"]}, ${item["y"]}`;
+    td[2].textContent = item["full"] ? "Direct" : "Full Rotation";
+
+    clone.querySelector(".btn_recall_load").onclick = function () {
+      document.getElementById("form_display_str").value = item["string"];
+      document.getElementById("form_display_x").value = item["x"];
+      document.getElementById("form_display_y").value = item["y"];
+      document.getElementById("form_display_mode").value = item["full"];
+    };
+    clone.querySelector(".btn_recall_display").onclick = function () {
+      document.getElementById("form_display_str").value = item["string"];
+      document.getElementById("form_display_x").value = item["x"];
+      document.getElementById("form_display_y").value = item["y"];
+      document.getElementById("form_display_mode").value = item["full"];
+      btn_display();
+    };
+  
+    tbody.appendChild(clone);
+  }
+}
 
 function btn_display() {
   const text = document.getElementById("form_display_str").value;
@@ -107,6 +141,13 @@ function btn_display() {
     "full": mode == "false" ? false : true
   }
   SFCCommandAsync(msg);
+
+  push_recall_history({
+    "string": text,
+    "x": x,
+    "y": y,
+    "full": mode
+  })
 }
 
 function btn_clear() {
@@ -203,6 +244,7 @@ function parse_module_conf(data) {
       td[12].textContent = mod["status"]["power"];
       td[14].textContent = `${Math.round((mod["status"]["voltage"]) * 100) / 100} V`;
       td[16].textContent = `id: ${mod["flapID"]}, char: '${mod["flapChar"]}'`;
+      td[20].textContent = mod["firmwareVersion"];
 
       // prepare flags
       let flags = [];
