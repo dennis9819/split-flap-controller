@@ -32,6 +32,7 @@ enum SFDEVICE_POWER
     UNKNOWN   // power state unknown (device offline)
 };
 
+
 struct SFDEVICE
 {
     int pos_x;                       // position in matrix
@@ -45,6 +46,7 @@ struct SFDEVICE
     u_int8_t current_flap;           // current flap position
     enum SFDEVICE_STATE deviceState; // device state
     enum SFDEVICE_POWER powerState;  // power state
+    SEMVER firmware;                 // Firmware Version
 };
 
 enum
@@ -181,6 +183,44 @@ int devicemgr_readCalib(int device_id)
 }
 
 /*
+* Read firmware version from device and store it in device struct
+* Returns 0 on success, -1 on read error, -2 if device not online
+* 
+* @param device_id ID of device to read
+*/
+int devicemgr_readFirmwareVersion(int device_id)
+{
+    if (device_id < 0 || device_id >= SFDEVICE_MAXDEV)
+    {
+        log_message(LOG_ERROR, "device id %i out of bounds", device_id);
+        return -1;
+    }
+    if (devices[device_id].address == 0)
+    {
+        log_message(LOG_ERROR, "device id %i not defined", device_id);
+        return -1;
+    }
+    if (devices[device_id].deviceState == ONLINE)
+    {
+        if (sfbus_read_firmware(devices[device_id].rs485_descriptor,
+                                devices[device_id].address,
+                                &(devices[device_id].firmware)) != 0)
+        {
+            log_message(LOG_ERROR, "Error reading software version from device %i", device_id);
+            return -1;
+        }
+        else
+        {
+            return 0;
+        }
+    }
+    else
+    {
+        return -2;
+    }
+}
+
+/*
 * Generate json object with device map
 *
 * @return json object with device map
@@ -274,6 +314,16 @@ void devicemgr_printDetails(int device_id, json_object *root)
                            json_object_new_boolean(((devices[device_id].reg_status) >> 6) & 0x01));
     json_object_object_add(status, "flags", status_flags);
     json_object_object_add(root, "status", status);
+
+    // generate firmware version
+    char *version_string = (char *)malloc(12 * sizeof(char));
+    sprintf(version_string,
+            "%i.%i.%i",
+            devices[device_id].firmware.maj,
+            devices[device_id].firmware.min,
+            devices[device_id].firmware.patch);
+    json_object_object_add(root, "firmwareVersion", json_object_new_string(version_string));
+    free(version_string);
 }
 
 /*
@@ -549,6 +599,9 @@ int devicemgr_register(int rs485_descriptor, u_int16_t address, int x, int y, in
     devices[nid].current_flap = 0;
     devices[nid].deviceState = NEW;
     devices[nid].powerState = DISABLED;
+    devices[nid].firmware.maj = 0;
+    devices[nid].firmware.min = 0;
+    devices[nid].firmware.patch = 0;
     // try to reach device
     if (devicemgr_readStatus(nid) != 0)
     {
@@ -559,6 +612,7 @@ int devicemgr_register(int rs485_descriptor, u_int16_t address, int x, int y, in
     }
     else
     {
+        // read calibration data onece
         if (devicemgr_readCalib(nid) != 0)
         {
             log_message(LOG_WARNING,
@@ -566,6 +620,15 @@ int devicemgr_register(int rs485_descriptor, u_int16_t address, int x, int y, in
                         nid,
                         address);
         }
+        // read firmware version once
+        if (devicemgr_readFirmwareVersion(nid) != 0)
+        {
+            log_message(LOG_WARNING,
+                        "Error reading firmware version for device %i at address %i. Skipping initialization",
+                        nid,
+                        address);
+        }
+
     } // can continue without successfull initial read!
     if (deviceMap[x][y] >= 0)
     { // rest old ones

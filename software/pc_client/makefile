@@ -7,7 +7,7 @@
 #
 #
 
-TARGET_EXEC ?= a.out
+TARGET_EXEC ?= sfbus-server
 
 BUILD_DIR ?= ./build
 SRC_DIRS ?= ./src
@@ -19,8 +19,9 @@ DEPS := $(OBJS:.o=.d)
 INC_DIRS := $(shell find $(SRC_DIRS) -type d)
 INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
-JSON_C_DIR=/path/to/json_c/install
-CFLAGS += -I$(JSON_C_DIR)/include/json-c
+#JSON_C_DIR=/usr/lib/libjson-c.so.5
+#CFLAGS += -I$(JSON_C_DIR)/include/json-c
+CFLAGS += -I/usr/lib/
 # Or to use lines like: #include <json-c/json_object.h>
 #CFLAGS += -I$(JSON_C_DIR)/include
 LDFLAGS+= -L$(JSON_C_DIR)/lib -ljson-c	# json-c lib

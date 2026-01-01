@@ -80,7 +80,7 @@ Register device, assign new id and assign a location.
 ```
 {
    "command": "dm_describe",
-   "address": <device nus address>,
+   "address": <device bus address>,
    "x": <x position on screen>,
    "y": <y position on screen>,
 }	
@@ -124,6 +124,63 @@ Response:
    "devices_online": <online device count>
 }	
 ```
+
+#### Print string `dm_print`
+Print string at position (x,y)
+
+Request:
+```
+{
+   "command": "dm_describe",
+   "string": <string to display>,
+   "full": <boolean: full rotation of drum/recalibration>,
+   "x": <int: x position on screen>,
+   "y": <int: y position on screen>
+}	
+```
+Response:
+```
+{
+   "ack": true
+}	
+```
+
+#### Display flap number `dm_print_single`
+Print string at position (x,y)
+
+Request:
+```
+{
+   "command": "dm_print_single",
+   "flap": <int: flap to display>,
+   "full": <boolean: full rotation of drum/recalibration>,
+   "x": <int: x position on screen>,
+   "y": <int: y position on screen>
+}	
+```
+Response:
+```
+{
+   "ack": true
+}	
+```
+
+#### Display clear `dm_clear`
+Clears all flaps.
+
+Request:
+```
+{
+   "command": "dm_clear"
+}	
+```
+Response:
+```
+{
+   "ack": true
+}	
+```
+
 
 ### Device raw commands
 

@@ -115,7 +115,7 @@ ssize_t sfbus_recv_frame_wait(int fd, u_int16_t address, char *buffer)
 * @param fd: rs485 file descriptor
 * @param address: device address
 * @param buffer: buffer to store received data
-* @return length of received data on success, -1 on error
+* @return length of received payload on success (data + 2 crc bytes), -1 on error
 */
 ssize_t sfbus_recv_frame_v2(int fd, u_int16_t address, char *buffer)
 {
@@ -397,6 +397,37 @@ u_int8_t sfbus_read_status(int fd, u_int16_t address, double *voltage, u_int32_t
     u_int8_t status = *(_buffer + 0) & 0xFF; // store status byte temporarily
     free(_buffer);                           // free rx buffer to prevent memory leak
     return status;
+}
+
+/*
+* Read device firmware version
+* 
+* @param fd: rs485 file descriptor
+* @param address: device address
+* @param version: pointer to SEMVER Version struct
+* @return 0 on success, -1 on error
+*/
+int sfbus_read_firmware(int fd, u_int16_t address, SEMVER *version)
+{
+    char *cmd = "\xF9";
+    char *_buffer = malloc(SFBUS_MAX_BUFFER_SIZE);
+    sfbus_send_frame_v2(fd, address, strlen(cmd), cmd);
+
+    int res = sfbus_recv_frame_wait(fd, 0xFFFF, _buffer);
+    if (res < 0)
+    {
+        free(_buffer);
+        return -1;
+    }
+    if (res != 3){ // Verify package length!
+        log_message(LOG_WARNING, "Invalid data received from 0x%04X! Unexpected package length: %i.", address, res);
+        return -1;
+    }
+
+    (*version).maj = *(_buffer + 0) & 0xFF;
+    (*version).min = *(_buffer + 1) & 0xFF;
+    (*version).patch = *(_buffer + 2) & 0xFF;
+    return 0;
 }
 
 /*
