@@ -61,26 +61,29 @@ void initialSetup()
         eeprom_write_c(CONF_ADDR_OKAY, CONF_CONST_OKAY);
     }
 }
-
+/* 
+* Read and parse command from rx buffer
+*/
 void readCommand()
 {
-    int payload_len = parse_buffer(address, payload);
+    char *payload_tmp = payload; // temporary pointer to payload buffer to avoid malloc/free every time
+    int payload_len = parse_buffer(address, payload_tmp);
     if (payload_len > 0) // if positive, package is valid
     {
-        payload += 2; // skip address bytes
+        payload_tmp += 2; // skip address bytes
         // read command byte
-        uint8_t opcode = *payload;
+        uint8_t opcode = *payload_tmp;
         // parse commands
         if (opcode == CMDB_SETVAL)
         {
             // 0x1O = Set Digit
-            uint8_t targetDigit = *(payload + 1);
+            uint8_t targetDigit = *(payload_tmp + 1);
             mctrl_set(targetDigit, 0);
         }
         else if (opcode == CMDB_SETVALR)
         {
             // 0x11 = Set Digit (full rotation)
-            uint8_t targetDigit = *(payload + 1);
+            uint8_t targetDigit = *(payload_tmp + 1);
             mctrl_set(targetDigit, 1);
         }
         else if (opcode == CMDB_EEPROMR)
@@ -103,7 +106,7 @@ void readCommand()
             eeprom_write_c(CONF_ADDR_OKAY, (char)0xFF);
             for (uint16_t i = 0; i < 4; i++)
             {
-                eeprom_write_c(i, *(payload + 1 + i));
+                eeprom_write_c(i, *(payload_tmp + 1 + i));
             }
             eeprom_write_c(CONF_ADDR_OKAY, CONF_CONST_OKAY);
             // respond with readout
@@ -179,13 +182,13 @@ void readCommand()
             _delay_ms(2);
             sfbus_send_frame_v2(0xFFFF, &msg, 1);
         }
-        //memset(payload, 0x00, PROTO_MAXPKGLEN); // clear buffer
+        //memset(payload_tmp, 0x00, PROTO_MAXPKGLEN); // clear buffer
     }
 }
 
 int main()
 {
-    payload = malloc(PROTO_MAXPKGLEN);
+    payload = malloc(PROTO_MAXPKGLEN); // allocate payload buffer initially to avoid malloc/free every time
     initialSetup();
     rs485_init();
     setup_async_rx();

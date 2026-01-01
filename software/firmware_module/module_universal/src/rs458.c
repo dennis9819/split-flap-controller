@@ -36,7 +36,7 @@ void rs485_send_c(char data)
     PORTD &= ~((1 << PIN_RS485_TXE) | (1 << PIN_RS485_RXE)); // set transciever back to receive
 }
 
-// receive without timeout
+// receive without timeout (sync)
 char rs485_recv_c()
 {
     while (!(UCSRA & (1 << RXC)))
@@ -44,7 +44,7 @@ char rs485_recv_c()
     return UDR;
 }
 
-// receive with timeout
+// receive with timeout (sync)
 int rs485_recv_c_rxout(uint8_t timeout, char *data)
 {
     timer_ticks = 0;
@@ -60,7 +60,7 @@ int rs485_recv_c_rxout(uint8_t timeout, char *data)
 }
 
 // SFBUS Functions
-// receive paket with crc checking and timeout
+// receive paket with crc checking and timeout (sync)
 int sfbus_recv_frame_v2(uint16_t address, char *payload)
 {
     const uint8_t RX_TIMEOUT = 4;
@@ -158,9 +158,13 @@ uint8_t *rx_buffer_temp;        // receive buffer
 void setup_async_rx()
 {
     rx_buffer_temp = malloc(PROTO_MAXPKGLEN); // reserve memory for rx buffer
-    UCSRB |= (1 << RXCIE);                    //enable rx interrupt
+    UCSRB |= (1 << RXCIE);                    // enable rx interrupt
 }
 
+/*
+* UART RX Complete Interrupt Service Routine
+* Receives bytes into buffer and marks when full package is received
+*/
 ISR(USART_RXC_vect)
 {
     if (rx_buffer_rx_done == 0) // only receive when last buffer was processed
@@ -201,9 +205,9 @@ ISR(USART_RXC_vect)
 
 int parse_buffer(uint16_t address, char *payload)
 {
-    if (rx_buffer_rx_done > 0)
+    if (rx_buffer_rx_done > 0) // only parse when full package is received
     {
-        uint8_t frm_length = *(rx_buffer_temp + 2);
+        uint8_t frm_length = *(rx_buffer_temp + 2); // read frame length from 3rd byte
         // check protocol version
         if (*(rx_buffer_temp + 1) != 0x01)
         {
