@@ -16,7 +16,7 @@
 #include <string.h>
 #include <sys/types.h>
 
-enum SFDEVICE_STATE
+enum SFDEVICE_STATE // device states
 {
     UNALLOCATED, // device slot not allocated
     NEW,         // device slot allocated, but is not yet refreshed
@@ -25,7 +25,7 @@ enum SFDEVICE_STATE
     FAILED,      // device is online, but in fail-safe mode
     REMOVED      // device has been removed and can be reallocated
 };
-enum SFDEVICE_POWER
+enum SFDEVICE_POWER // device power states
 {
     DISABLED, // motor power disabled
     ENABLED,  // motor power enabled
@@ -33,7 +33,7 @@ enum SFDEVICE_POWER
 };
 
 
-struct SFDEVICE
+struct SFDEVICE // structure for each device
 {
     int pos_x;                       // position in matrix
     int pos_y;                       // position in matrix
@@ -49,7 +49,7 @@ struct SFDEVICE
     SEMVER firmware;                 // Firmware Version
 };
 
-enum
+enum // device manager constants
 {
     SFDEVICE_MAXDEV = 128,   // maximum number of devices supported
     SFDEVICE_MAX_X = 20,     // maximum x size of device matrix
@@ -63,6 +63,16 @@ int nextFreeSlot = -1;                         // next free slot in device array
 int deviceMap[SFDEVICE_MAX_X][SFDEVICE_MAX_Y]; // device map matrix
 int deviceFd;                                  // rs485 file descriptor
 struct SFDEVICE devices[SFDEVICE_MAXDEV];      // device array
+
+
+struct SFDEVICE_QUEUE_ITEM  // structure for queued display commands
+{
+    int device_id;  // device id
+    int flap_id;    // target flap id
+    int flap_delta; // flap delta for sync finish mode
+};
+struct SFDEVICE_QUEUE_ITEM display_queue[SFDEVICE_MAXDEV];  // display command queue
+int display_queue_count = 0;                                // number of items in display queue
 
 // symbol table for flap characters
 const char *symbols[FLAP_COUNT] = {" ", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N",
@@ -488,8 +498,16 @@ void devicemgr_printText(const char *text, int x, int y, sfdisplaymode displayMo
             }
             else
             {
-                log_message(LOG_DEBUG, "print char '%c' to id:%i", *(text + i), devices[this_id].address);
-                devicemgr_setSingle(this_id, *(text + i), displayMode);
+                if (displayMode == DISPLAY_DIRECT || displayMode == DISPLAY_FULLROTATION){
+                    log_message(LOG_DEBUG, "print char '%c' to id:%i", *(text + i), devices[this_id].address);
+                    devicemgr_setSingle(this_id, *(text + i), displayMode);
+                }else if(displayMode == DISPLAY_SYNCFINISH){
+                    // delay each module so all final flaps fall at the same time
+                    log_message(LOG_DEBUG, "queue char '%c' to id:%i", *(text + i), devices[this_id].address);
+                    sfbus_queue_display(this_id, *(text + i));
+                }else{
+                    log_message(LOG_ERROR, "invalid display mode %i", displayMode); 
+                }
             }
         }
         else
@@ -501,6 +519,101 @@ void devicemgr_printText(const char *text, int x, int y, sfdisplaymode displayMo
                         *(text + i));
         }
     }
+    if (displayMode == DISPLAY_SYNCFINISH){
+        sfbus_queue_execute();
+    }
+}
+
+/*
+* Queue display command to be executed later
+*
+* @param id ID of device to set
+* @param flap character to set
+* @return 0 on success, -1 on error
+*/
+int sfbus_queue_display(int id, char flap){
+    if (id < 0 || id >= SFDEVICE_MAXDEV)
+    {
+        log_message(LOG_ERROR, "device id %i out of bounds", id);
+        return -1;
+    }
+    if (devices[id].address == 0)
+    {
+        log_message(LOG_ERROR, "device id %i not defined", id);
+        return -1;
+    }
+    // first convert char to flap id
+    char test_char = toupper(flap);
+    // printf("find char %c\n", test_char);
+    for (int ix = 0; ix < FLAP_COUNT; ix++)
+    {
+        if (*symbols[ix] == test_char)
+        {
+            // add to queue
+            if (display_queue_count >= SFDEVICE_MAXDEV){
+                log_message(LOG_ERROR, "display queue full. cannot queue more items");
+                return -1;
+            }
+            display_queue[display_queue_count].device_id = id;
+            display_queue[display_queue_count].flap_id = ix;
+            int current_flap = devices[id].current_flap;
+            int delta = ix - current_flap;
+            if (delta < 0){ // wrap around to avoid negative deltas
+                delta += FLAP_COUNT;
+            }
+            display_queue[display_queue_count].flap_delta = delta;
+            display_queue_count++;
+            log_message(LOG_DEBUG, "queued char '%c' (flap %i) to id:%i with delta %i", flap, ix, devices[id].address, delta);
+            return 0;
+        }
+    }
+    log_message(LOG_WARNING, "character '%c' not found in symbol table", flap);
+    return -1;
+}
+
+/*
+* Execute all queued display commands with synchronized finish
+*/
+void sfbus_queue_execute(){
+    log_message(LOG_INFO, "execute display queue with %i items", display_queue_count);
+    if (display_queue_count == 0){ // check if queue is empty and skip if true
+        log_message(LOG_INFO, "display queue empty. nothing to do");
+        return;
+    }
+    // get largest delta
+    int max_delta = 0;      // max delta to know longest time to wait
+    int executed_count = 0; // count of executed items
+    for (int i = 0; i < display_queue_count; i++){  // find max delta to know where to start
+        if (display_queue[i].flap_delta > max_delta){
+            max_delta = display_queue[i].flap_delta;    
+        }
+    }
+    // execute all with delay
+    for (int step = max_delta; step > 0; step--){
+        for (int i = 0; i < display_queue_count; i++){
+            if (display_queue[i].flap_delta == step){
+                executed_count++; // incerement executed count, used to break loop early
+                log_message(LOG_DEBUG, "execute queued display to id:%i with flap %i", devices[display_queue[i].device_id].address, display_queue[i].flap_id);
+                sfbus_display(devices[display_queue[i].device_id].rs485_descriptor, devices[display_queue[i].device_id].address, display_queue[i].flap_id);
+                devices[display_queue[i].device_id].current_flap = display_queue[i].flap_id;
+            }
+        }
+        if (executed_count == display_queue_count){
+            break; // all executed, break loop early
+        }else{
+            // sleep 1044ms
+            usleep(104400); // approx time flaps to move one position
+        }
+    }
+    // clear queue
+    display_queue_count = 0;
+    for (int i = 0; i < SFDEVICE_MAXDEV; i++){
+        display_queue[i].device_id = -1;
+        display_queue[i].flap_id = -1;
+        display_queue[i].flap_delta = 0;
+    }
+
+
 }
 
 /*

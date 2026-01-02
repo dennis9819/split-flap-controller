@@ -155,7 +155,8 @@ int start_webserver(json_object *(*commandparser_func_ptr)(json_object *))
                                   .timeout_ms = 1000,
                                   .evs.onopen = &ws_opencon,
                                   .evs.onclose = &ws_closecon,
-                                  .evs.onmessage = &ws_messagehandler});
+                                  .evs.onmessage = &ws_messagehandler
+                                });
 
     return (0);
 }

@@ -26,8 +26,9 @@
 #define SFDEFICEMGR_H
 typedef enum SFDISPLAYMODE
 {
-    DISPLAY_DIRECT,
-    DISPLAY_FULLROTATION
+    DISPLAY_DIRECT,         // go directly to flap
+    DISPLAY_FULLROTATION,   // do a full rotation before going to flap
+    DISPLAY_SYNCFINISH      // all flaps move in sync and finish at the same time
 } sfdisplaymode;
 #endif
 
@@ -46,3 +47,5 @@ int devicemgr_load(char *file);
 int devicemgr_load_single(json_object *device_obj);
 int devicemgr_remove(int id);
 void devicemgr_clearscreen();
+int sfbus_queue_display(int id, char flap);
+void sfbus_queue_execute();

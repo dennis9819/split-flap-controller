@@ -188,7 +188,7 @@ void cmd_dm_print(json_object *req, json_object *res)
     json_object *jx = json_object_object_get(req, "x");
     json_object *jy = json_object_object_get(req, "y");
     json_object *jstr = json_object_object_get(req, "string");
-    json_object *jfullrot = json_object_object_get(req, "full");
+    json_object *jmode = json_object_object_get(req, "mode");
     if (jx == NULL)
     {
         json_object_object_add(res, "error", json_object_new_string("format error"));
@@ -209,17 +209,21 @@ void cmd_dm_print(json_object *req, json_object *res)
         int x = json_object_get_int(jx);
         int y = json_object_get_int(jy);
         const char *str = json_object_get_string(jstr);
-        if (jfullrot == NULL)
+        if (jmode == NULL)
         {
             devicemgr_printText(str, x, y, DISPLAY_FULLROTATION);
         }
-        else if (json_object_get_boolean(jfullrot) == false)
+        else if (json_object_get_int(jmode) == 1)
         {
             devicemgr_printText(str, x, y, DISPLAY_DIRECT);
         }
-        else
+        else if (json_object_get_int(jmode) == 0)
         {
             devicemgr_printText(str, x, y, DISPLAY_FULLROTATION);
+        }
+        else
+        {
+            devicemgr_printText(str, x, y, DISPLAY_SYNCFINISH);
         }
 
         json_object_object_add(res, "ack", json_object_new_boolean(true));

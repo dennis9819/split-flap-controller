@@ -133,7 +133,7 @@ Request:
 {
    "command": "dm_describe",
    "string": <string to display>,
-   "full": <boolean: full rotation of drum/recalibration>,
+   "mode": <int: 0=full rotation/1=direct/2=sync>,
    "x": <int: x position on screen>,
    "y": <int: y position on screen>
 }	
