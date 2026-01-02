@@ -17,10 +17,12 @@ of the license in the project repository or at <https://www.gnu.org/licenses/agp
     <link rel="stylesheet" href="css/pico.min.css">
     <link rel="stylesheet" href="css/sfc.css">
     <script type="text/javascript" src="js/sfc.js"></script>
+    <script type="text/javascript" src="js/webgui.js"></script>
     <title>SplitFlap Controller!</title>
 </head>
 
 <body>
+    <!-- Dialogs -->
     <dialog id="change_address">
         <article>
             <h2>Change address</h2>
@@ -87,7 +89,29 @@ of the license in the project repository or at <https://www.gnu.org/licenses/agp
                 </footer>
         </article>
     </dialog>
-
+    <!-- Header (Title and Menu) -->
+    <header class="container">
+        <nav>
+            <ul>
+                <li><strong>SplitFlap Controller Web GUI</strong></li>
+            </ul>
+            <ul>
+                <li><a onclick="change_view('view_display')" class="secondary">Display</a></li>
+                <li>
+                    <details class="dropdown" id="menu_dropdown">
+                        <summary>
+                            Configuration
+                        </summary>
+                        <ul dir="rtl">
+                            <li><a onclick="change_view('view_conf_modules')">Modules</a></li>
+                            <li><a onclick="change_view('view_storage')">Storage</a></li>
+                        </ul>
+                    </details>
+                </li>
+            </ul>
+        </nav>
+    </header>
+    <!-- Content -->
     <main class="container">
         <div id="message_container" style="width: 100%;" class="notification-container">
             <template id="notification">
@@ -97,34 +121,16 @@ of the license in the project repository or at <https://www.gnu.org/licenses/agp
             </template>
 
         </div>
-        <nav>
-            <ul>
-                <li><strong>SplitFlap</strong></li>
-            </ul>
-            <ul>
-                <li><a onclick="changeView('view_display')" class="secondary">Display</a></li>
-                <li>
-                    <details class="dropdown" id="menu_dropdown">
-                        <summary>
-                            Configuration
-                        </summary>
-                        <ul dir="rtl">
-                            <li><a onclick="changeView('view_conf_modules')">Modules</a></li>
-                            <li><a href="#">Layout</a></li>
-                            <li><a onclick="changeView('view_storage')">Storage</a></li>
-                        </ul>
-                    </details>
-                </li>
-            </ul>
-        </nav>
+
 
         <div id="view_display"><!-- Main View : print -->
             <h1>Display Something!</h1>
-            <form id="form_display">
+            <div id="form_display">
                 <fieldset>
                     <label>
                         Text to display:
-                        <input id="form_display_str" name="text" placeholder="Text" />
+                        <input id="form_display_str" name="text" placeholder="Text" oninput="render_str_len()" />
+                        <small id="form_display_str_len">Length: 0 chars</small>
                     </label>
                     <label>
                         Position on display:
@@ -139,8 +145,9 @@ of the license in the project repository or at <https://www.gnu.org/licenses/agp
                             <option selected disabled value="">
                                 Select display mode
                             </option>
-                            <option value="true">Full Rotation</option>
-                            <option value="false">Direct</option>
+                            <option value="0">Full Rotation</option>
+                            <option value="1">Direct</option>
+                            <option value="2">Sync</option>
                         </select>
                     </label>
                 </fieldset>
@@ -148,6 +155,8 @@ of the license in the project repository or at <https://www.gnu.org/licenses/agp
                 <input type="button" onClick="btn_display()" value="Display" />
                 <input type="button" onClick="btn_clear()" value="Clear screen" />
 
+                <hr>
+                <h3>Favorites and History</h3>
                 <div role="group">
                     <table>
                         <thead>
@@ -160,21 +169,50 @@ of the license in the project repository or at <https://www.gnu.org/licenses/agp
                         </thead>
                         <template id="recall_list_template">
                             <tr>
-                                <td class="recall_text">Hello</td>
+                                <td>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
+                                        class="bi bi-heart-fill" viewBox="0 0 16 16">
+                                        <path fill-rule="evenodd"
+                                            d="M8 1.314C12.438-3.248 23.534 4.735 8 15-7.534 4.736 3.562-3.248 8 1.314" />
+                                    </svg>
+                                    <p class="recall_text" style="display: inline;"></p>
+                                </td>
                                 <td class="recall_position">0,0</td>
                                 <td class="recall_mode">Full Rotation</td>
                                 <td>
-                                    <input type="button" class="btn_recall_display" value="Display" />
-                                    <input type="button" class="btn_recall_load" value="Recall" />
+                                    <button type="button" class="btn_recall_display">
+                                        Display
+                                    </button>
+                                    <button type="button" class="btn_recall_load">
+                                        Recall
+                                    </button>
+                                    <button type=“button” class="btn_recall_fav">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                            fill="currentColor" class="bi bi-bookmark-heart" viewBox="0 0 16 16">
+                                            <path fill-rule="evenodd"
+                                                d="M8 4.41c1.387-1.425 4.854 1.07 0 4.277C3.146 5.48 6.613 2.986 8 4.412z" />
+                                            <path
+                                                d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v13.5a.5.5 0 0 1-.777.416L8 13.101l-5.223 2.815A.5.5 0 0 1 2 15.5zm2-1a1 1 0 0 0-1 1v12.566l4.723-2.482a.5.5 0 0 1 .554 0L13 14.566V2a1 1 0 0 0-1-1z" />
+                                        </svg>
+                                    </button>
+                                    <button type=“button” class="btn_recall_fav_remove">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                            fill="currentColor" class="bi bi-bookmark-heart-fill" viewBox="0 0 16 16">
+                                            <path
+                                                d="M2 15.5a.5.5 0 0 0 .74.439L8 13.069l5.26 2.87A.5.5 0 0 0 14 15.5V2a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2zM8 4.41c1.387-1.425 4.854 1.07 0 4.277C3.146 5.48 6.613 2.986 8 4.412z" />
+                                        </svg>
+                                    </button>
+
                                 </td>
                             </tr>
                         </template>
+
                         <tbody id="recall_list">
-                           
+
                         </tbody>
                     </table>
                 </div>
-            </form>
+            </div>
         </div>
         <div id="view_conf_modules" style="display: none;">
             <h1>Module config</h1>
@@ -280,6 +318,17 @@ of the license in the project repository or at <https://www.gnu.org/licenses/agp
 
 
     </main>
+    <!-- Footer -->
+    <footer class="container">
+        <small>
+            Designed and developed by <a target="_blank" rel="noopener noreferrer"
+                href="https://www.dennisgunia.de">Dennis Gunia</a> |
+            <a target="_blank" rel="noopener noreferrer" href="https://github.com/dennis9819/split-flap-controller">
+                Source code
+            </a>
+        </small>
+    </footer>
+
 </body>
 
 </html>
